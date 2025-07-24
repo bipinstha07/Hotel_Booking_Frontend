@@ -8,7 +8,7 @@ import BookRoom from './components/BookRoom';
 function App() {
   return (
     <div>
-      <Header />
+      <Header/>
       <Hero />
       <Rooms />
       <Amenties />

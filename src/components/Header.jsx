@@ -5,8 +5,8 @@ function Header() {
     <header className="bg-white shadow-md sticky top-0 z-50">
       <div className="max-w-7xl mx-auto flex items-center justify-between px-6 py-4">
         {/* Logo/Title */}
-        <div className="flex items-center space-x-2">
-          <span className="text-2xl font-extrabold text-blue-700 tracking-tight">Private Hotel</span>
+        <div className="flex items-center space-x-2"> <a href="/">
+          <span className="text-2xl font-extrabold text-blue-700 tracking-tight">Private Hotel</span></a>
         </div>
         {/* Navigation */}
         <nav className="hidden md:flex space-x-8 text-gray-700 font-medium">
