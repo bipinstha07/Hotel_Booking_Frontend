@@ -45,6 +45,7 @@ export default function HomePage() {
   const [checkInDate, setCheckInDate] = useState<Date>()
   const [checkOutDate, setCheckOutDate] = useState<Date>()
   const [guests, setGuests] = useState(1)
+  const [bookingGuests, setBookingGuests] = useState(1)
   const [selectedRoom, setSelectedRoom] = useState<Room | null>(null)
   const [selectedRoomType, setSelectedRoomType] = useState("all")
   const [priceRange, setPriceRange] = useState({ min: "", max: "" })
@@ -243,17 +244,17 @@ export default function HomePage() {
     const booking = {
       customerName: bookingData.customerName,
       customerEmail: bookingData.customerEmail,
-      customerPhone: bookingData.phone,
+      phoneNumber: bookingData.phone,
       checkInDate: format(checkInDate, "yyyy-MM-dd"),
       checkOutDate: format(checkOutDate, "yyyy-MM-dd"),
-      numberOfGuests: guests,
+      numberOfGuest: bookingGuests,
       totalPrice,
       notes: bookingData.notes,
-      roomId: room.id,
+      roomId: room.id.toString(),
     }
 
     try {
-      const response = await fetch('http://localhost:8080/booking/create', {
+      const response = await fetch('http://localhost:8080/user/booking/create', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -552,14 +553,14 @@ export default function HomePage() {
                       
                       {/* Number of Guests */}
                       <div>
-                        <Label htmlFor="guests">Number of Guests *</Label>
+                        <Label htmlFor="booking-guests">Number of Guests *</Label>
                         <Input
-                          id="guests"
+                          id="booking-guests"
                           type="number"
                           min="1"
                           max={room.capacity}
-                          value={guests}
-                          onChange={(e) => setGuests(Number.parseInt(e.target.value))}
+                          value={bookingGuests}
+                          onChange={(e) => setBookingGuests(Number.parseInt(e.target.value))}
                           placeholder={`Max ${room.capacity} guests`}
                         />
                       </div>
@@ -589,7 +590,7 @@ export default function HomePage() {
                           </div>
                           <div className="flex justify-between items-center mb-2">
                             <span>Guests:</span>
-                            <span>{guests} person(s)</span>
+                            <span>{bookingGuests} person(s)</span>
                           </div>
                           <div className="flex justify-between items-center font-bold">
                             <span>Total:</span>
