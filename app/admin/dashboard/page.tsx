@@ -31,18 +31,25 @@ interface Room {
 }
 
 interface Booking {
-  id: number
+  id?: string
   customerName: string
   customerEmail: string
-  customerPhone?: string
-  roomId: string | number
-  roomType: string
+  phoneNumber: number
   checkInDate: string
   checkOutDate: string
   totalPrice: number
-  status: "PENDING" | "CONFIRMED" | "CANCELLED" | "COMPLETED"
+  bookingStatus: string
   bookingCreated: string
-  notes?: string
+  notes: string
+  numberOfGuest: number
+  roomId: string
+  roomEntity?: {
+    id: string
+    roomType: string
+    pricePerNight: number
+    capacity: number
+    description: string
+  }
 }
 
 const roomTypes = [
@@ -162,7 +169,28 @@ export default function AdminDashboard() {
   // Prevent hydration mismatch
   useEffect(() => {
     setMounted(true)
+    fetchBookings()
   }, [])
+
+  const fetchBookings = async () => {
+    try {
+      const response = await fetch('http://localhost:8080/admin/room/booking/getAll')
+      
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`)
+      }
+      
+      const data = await response.json()
+      setBookings(data)
+    } catch (err) {
+      console.error('Error fetching bookings:', err)
+      toast({
+        title: "Error",
+        description: "Failed to fetch bookings from the API",
+        variant: "destructive",
+      })
+    }
+  }
 
   const fetchRoomImages = async (roomId: string | number) => {
     try {
@@ -533,9 +561,9 @@ export default function AdminDashboard() {
     }
   }
 
-  const handleApproveBooking = async (bookingId: number) => {
+  const handleApproveBooking = async (bookingId: string) => {
     const updatedBookings = bookings.map((booking) =>
-      booking.id === bookingId ? { ...booking, status: "CONFIRMED" as const } : booking,
+      booking.id === bookingId ? { ...booking, bookingStatus: "CONFIRMED" } : booking,
     )
     setBookings(updatedBookings)
     toast({
@@ -547,7 +575,7 @@ export default function AdminDashboard() {
     })
   }
 
-  const handleDeleteBooking = (bookingId: number, customerName?: string) => {
+  const handleDeleteBooking = (bookingId: string, customerName?: string) => {
     setItemToDelete({ 
       type: 'booking', 
       id: bookingId, 
@@ -556,9 +584,9 @@ export default function AdminDashboard() {
     setShowDeleteConfirm(true)
   }
 
-  const handleCancelBooking = async (bookingId: number) => {
+  const handleCancelBooking = async (bookingId: string) => {
     const updatedBookings = bookings.map((booking) =>
-      booking.id === bookingId ? { ...booking, status: "CANCELLED" as const } : booking,
+      booking.id === bookingId ? { ...booking, bookingStatus: "CANCELLED" } : booking,
     )
     setBookings(updatedBookings)
     toast({
@@ -571,17 +599,19 @@ export default function AdminDashboard() {
   }
 
   const getStatusColor = (status: string) => {
-    switch (status) {
+    switch (status?.toUpperCase()) {
       case "PENDING":
-        return "bg-yellow-500"
+        return "bg-yellow-100 text-yellow-800 border-yellow-200"
       case "CONFIRMED":
-        return "bg-green-500"
+      case "APPROVED":
+        return "bg-green-100 text-green-800 border-green-200"
       case "CANCELLED":
-        return "bg-red-500"
+      case "CANCEL":
+        return "bg-red-100 text-red-800 border-red-200"
       case "COMPLETED":
-        return "bg-blue-500"
+        return "bg-blue-100 text-blue-800 border-blue-200"
       default:
-        return "bg-gray-500"
+        return "bg-gray-100 text-gray-800 border-gray-200"
     }
   }
 
@@ -592,21 +622,21 @@ export default function AdminDashboard() {
   })
 
   const getStatusActions = (booking: Booking) => {
-    switch (booking.status) {
+    switch (booking.bookingStatus) {
       case "PENDING":
         return (
           <div className="flex gap-2">
             <Button
               size="sm"
-              onClick={() => handleApproveBooking(booking.id)}
+              onClick={() => handleApproveBooking(booking.id!)}
               className="bg-green-600 hover:bg-green-700"
             >
               Approve
             </Button>
-            <Button size="sm" variant="outline" onClick={() => handleCancelBooking(booking.id)}>
+            <Button size="sm" variant="outline" onClick={() => handleCancelBooking(booking.id!)}>
               Cancel
             </Button>
-            <Button size="sm" variant="destructive" onClick={() => handleDeleteBooking(booking.id, booking.customerName)}>
+            <Button size="sm" variant="destructive" onClick={() => handleDeleteBooking(booking.id!, booking.customerName)}>
               Delete
             </Button>
           </div>
@@ -614,17 +644,17 @@ export default function AdminDashboard() {
       case "CONFIRMED":
         return (
           <div className="flex gap-2">
-            <Button size="sm" variant="outline" onClick={() => handleCancelBooking(booking.id)}>
+            <Button size="sm" variant="outline" onClick={() => handleCancelBooking(booking.id!)}>
               Cancel
             </Button>
-            <Button size="sm" variant="destructive" onClick={() => handleDeleteBooking(booking.id, booking.customerName)}>
+            <Button size="sm" variant="destructive" onClick={() => handleDeleteBooking(booking.id!, booking.customerName)}>
               Delete
             </Button>
           </div>
         )
       default:
         return (
-          <Button size="sm" variant="destructive" onClick={() => handleDeleteBooking(booking.id, booking.customerName)}>
+          <Button size="sm" variant="destructive" onClick={() => handleDeleteBooking(booking.id!, booking.customerName)}>
             Delete
           </Button>
         )
@@ -918,16 +948,14 @@ export default function AdminDashboard() {
                         <div className="flex justify-between items-start mb-4">
                           <div>
                             <h3 className="font-semibold text-lg">
-                              {roomTypeLabels[booking.roomType as keyof typeof roomTypeLabels]}
+                              {booking.roomEntity?.roomType || `Room ${booking.roomId}`}
                             </h3>
                             <p className="text-sm text-gray-600">Booking ID: #{booking.id}</p>
                             <p className="text-sm text-gray-600">Customer: {booking.customerName}</p>
                             <p className="text-sm text-gray-600">Email: {booking.customerEmail}</p>
-                            {booking.customerPhone && (
-                              <p className="text-sm text-gray-600">Phone: {booking.customerPhone}</p>
-                            )}
+                            <p className="text-sm text-gray-600">Phone: {booking.phoneNumber}</p>
                           </div>
-                          <Badge className={getStatusColor(booking.status)}>{booking.status}</Badge>
+                          <Badge className={getStatusColor(booking.bookingStatus)}>{booking.bookingStatus}</Badge>
                         </div>
 
                         <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-4">
@@ -957,7 +985,7 @@ export default function AdminDashboard() {
                         )}
 
                         <div className="flex justify-between items-center">
-                          <p className="text-sm text-gray-500">Status: {booking.status}</p>
+                          <p className="text-sm text-gray-500">Status: {booking.bookingStatus}</p>
                           {getStatusActions(booking)}
                         </div>
                       </CardContent>
