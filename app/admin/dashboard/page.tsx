@@ -1,0 +1,1134 @@
+"use client"
+
+import type React from "react"
+
+import { useState, useEffect } from "react"
+import dynamic from "next/dynamic"
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { Button } from "@/components/ui/button"
+import { Input } from "@/components/ui/input"
+import { Label } from "@/components/ui/label"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
+import { Badge } from "@/components/ui/badge"
+import { Textarea } from "@/components/ui/textarea"
+import { Plus, Edit, Trash2, Users, BedDouble, DollarSign, Calendar, ChevronLeft, ChevronRight } from "lucide-react"
+import Image from "next/image"
+import { useRouter } from "next/navigation"
+import { ImageUpload } from "@/components/image-upload"
+import { useToast } from "@/hooks/use-toast"
+import { Toaster } from "@/components/ui/toaster"
+
+interface Room {
+  id: string | number
+  roomType: string
+  pricePerNight: number
+  capacity: number
+  images: string[]
+  amenities: string[]
+  description: string
+  available: boolean
+}
+
+interface Booking {
+  id: number
+  customerName: string
+  customerEmail: string
+  customerPhone?: string
+  roomId: string | number
+  roomType: string
+  checkInDate: string
+  checkOutDate: string
+  totalPrice: number
+  status: "PENDING" | "CONFIRMED" | "CANCELLED" | "COMPLETED"
+  bookingCreated: string
+  notes?: string
+}
+
+const roomTypes = [
+  "SINGLE_AC",
+  "SINGLE_DELUXE",
+  "SINGLE_NORMAL",
+  "DOUBLE_AC",
+  "DOUBLE_DELUXE",
+  "DOUBLE_NORMAL",
+  "FOUR_SEATER_AC",
+  "FOUR_SEATER_DELUXE",
+  "FOUR_SEATER_NORMAL",
+]
+
+const roomTypeLabels = {
+  SINGLE_AC: "Single AC",
+  SINGLE_DELUXE: "Single Deluxe",
+  SINGLE_NORMAL: "Single Normal",
+  DOUBLE_AC: "Double AC",
+  DOUBLE_DELUXE: "Double Deluxe",
+  DOUBLE_NORMAL: "Double Normal",
+  FOUR_SEATER_AC: "Four Seater AC",
+  FOUR_SEATER_DELUXE: "Four Seater Deluxe",
+  FOUR_SEATER_NORMAL: "Four Seater Normal",
+}
+
+export default function AdminDashboard() {
+  const [mounted, setMounted] = useState(false)
+  const [rooms, setRooms] = useState<Room[]>([])
+  const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false)
+  const [editingRoom, setEditingRoom] = useState<Room | null>(null)
+  const [newRoom, setNewRoom] = useState({
+    roomType: "",
+    pricePerNight: "",
+    capacity: "",
+    description: "",
+    amenities: "",
+    images: [] as File[],
+  })
+  const [bookings, setBookings] = useState<Booking[]>([])
+  const [activeTab, setActiveTab] = useState<"rooms" | "bookings">("rooms")
+  const [isCreatingRoom, setIsCreatingRoom] = useState(false)
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
+  const [itemToDelete, setItemToDelete] = useState<{ type: 'room' | 'booking', id: string | number, name?: string } | null>(null)
+  const [searchTerm, setSearchTerm] = useState("")
+  const router = useRouter()
+  const { toast } = useToast()
+
+  // Image Slider Component
+  const ImageSlider = ({ images, roomId }: { images: string[], roomId: string | number }) => {
+    const [currentImageIndex, setCurrentImageIndex] = useState(0)
+
+    const nextImage = () => {
+      setCurrentImageIndex((prev) => (prev + 1) % images.length)
+    }
+
+    const prevImage = () => {
+      setCurrentImageIndex((prev) => (prev - 1 + images.length) % images.length)
+    }
+
+    console.log(`Rendering slider for room ${roomId} with ${images.length} images:`, images)
+    console.log(`Current image URL (index ${currentImageIndex}):`, images[currentImageIndex])
+
+    if (images.length === 0) {
+      return (
+        <div className="relative h-64 bg-gray-200 flex items-center justify-center">
+          <p className="text-gray-500">No images available</p>
+        </div>
+      )
+    }
+
+    return (
+      <div className="relative h-64 group">
+        <Image
+          src={images[currentImageIndex]}
+          alt={`Room ${roomId} image ${currentImageIndex + 1}`}
+          fill
+          className="object-cover transition-opacity duration-300"
+        />
+        
+        {/* Navigation arrows */}
+        {images.length > 1 && (
+          <>
+            <button
+              onClick={prevImage}
+              className="absolute left-2 top-1/2 transform -translate-y-1/2 bg-black/50 hover:bg-black/70 text-white p-1 rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-200"
+            >
+              <ChevronLeft className="h-4 w-4" />
+            </button>
+            <button
+              onClick={nextImage}
+              className="absolute right-2 top-1/2 transform -translate-y-1/2 bg-black/50 hover:bg-black/70 text-white p-1 rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-200"
+            >
+              <ChevronRight className="h-4 w-4" />
+            </button>
+          </>
+        )}
+        
+        {/* Image indicators */}
+        {images.length > 1 && (
+          <div className="absolute bottom-2 left-1/2 transform -translate-x-1/2 flex space-x-1">
+            {images.map((_, index) => (
+              <button
+                key={index}
+                onClick={() => setCurrentImageIndex(index)}
+                className={`w-2 h-2 rounded-full transition-colors duration-200 ${
+                  index === currentImageIndex ? 'bg-white' : 'bg-white/50'
+                }`}
+              />
+            ))}
+          </div>
+        )}
+      </div>
+    )
+  }
+
+  // Prevent hydration mismatch
+  useEffect(() => {
+    setMounted(true)
+  }, [])
+
+  const fetchRoomImages = async (roomId: string | number) => {
+    try {
+      const adminToken = localStorage.getItem("adminToken")
+      if (!adminToken) return []
+
+      const response = await fetch(`http://localhost:8080/admin/room/${roomId}/images`, {
+        method: 'GET',
+        headers: {
+          'Authorization': `Bearer ${adminToken}`,
+          'Content-Type': 'application/json',
+        },
+      })
+
+      if (!response.ok) {
+        console.error(`Failed to fetch images for room ${roomId}: ${response.status}`)
+        return []
+      }
+
+      const imageIds = await response.json()
+      console.log(`Image IDs for room ${roomId}:`, imageIds)
+      
+      // Use image IDs directly with the image serving endpoint
+      const imageUrls = imageIds.map((imageId: string) => {
+        if (imageId.startsWith('http')) {
+          console.log(`Already full URL: ${imageId}`)
+          return imageId // Already a full URL
+        }
+        
+        // Use the image ID directly with the serving endpoint
+        // This will call: GET /admin/room/{roomId}/images/{imageId}
+        const imageUrl = `http://localhost:8080/admin/room/${roomId}/images/${imageId}`
+        console.log(`Image ID: ${imageId} → Serving URL: ${imageUrl}`)
+        
+        return imageUrl
+      })
+      
+      console.log(`Final image URLs for room ${roomId}:`, imageUrls)
+      return imageUrls
+    } catch (error) {
+      console.error(`Error fetching images for room ${roomId}:`, error)
+      return []
+    }
+  }
+
+  const fetchRooms = async () => {
+    try {
+      const adminToken = localStorage.getItem("adminToken")
+      if (!adminToken) {
+        router.push("/admin/login")
+        return
+      }
+
+      const response = await fetch('http://localhost:8080/admin/room/getAll', {
+        method: 'GET',
+        headers: {
+          'Authorization': `Bearer ${adminToken}`,
+          'Content-Type': 'application/json',
+        },
+      })
+
+      if (!response.ok) {
+        throw new Error(`Failed to fetch rooms: ${response.status}`)
+      }
+
+      const roomsData = await response.json()
+      
+      // Transform the API response to match our Room interface
+      const transformedRooms: Room[] = await Promise.all(roomsData.map(async (room: any) => {
+        // Fetch images for each room
+        const roomImages = await fetchRoomImages(room.id)
+        
+        return {
+          id: room.id,
+          roomType: room.roomType,
+          pricePerNight: room.pricePerNight,
+          capacity: room.capacity,
+          description: room.description || '',
+          amenities: typeof room.amenities === 'string' 
+            ? room.amenities.split(',').map((a: string) => a.trim()).filter(Boolean)
+            : Array.isArray(room.amenities) 
+              ? room.amenities 
+              : [],
+          images: roomImages.length > 0 
+            ? roomImages
+            : ["/placeholder.svg?height=300&width=400"],
+          available: true, // Default to available, you might want to add this field to your API
+        }
+      }))
+
+      setRooms(transformedRooms)
+    } catch (error) {
+      console.error('Error fetching rooms:', error)
+      // Fallback to empty array if API fails
+      setRooms([])
+    }
+  }
+
+
+
+
+
+  const handleEditImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = Array.from(e.target.files || [])
+    if (files.length > 0 && editingRoom) {
+      // Convert files to URLs for display (in real app, upload to server)
+      const newImageUrls = files.map((file) => URL.createObjectURL(file))
+      setEditingRoom({
+        ...editingRoom,
+        images: [...editingRoom.images, ...newImageUrls],
+      })
+    }
+  }
+
+  const removeEditImage = (index: number) => {
+    if (editingRoom) {
+      const updatedImages = editingRoom.images.filter((_, i) => i !== index)
+      setEditingRoom({ ...editingRoom, images: updatedImages })
+    }
+  }
+
+  useEffect(() => {
+    if (!mounted) return
+
+    // Check if admin is logged in
+    const adminToken = localStorage.getItem("adminToken")
+    if (!adminToken) {
+      router.push("/admin/login")
+      return
+    }
+
+    fetchRooms()
+    
+    // Initialize with empty bookings since we're using local state management
+    setBookings([])
+  }, [router, mounted])
+
+  const handleCreateRoom = async () => {
+    if (!newRoom.roomType || !newRoom.pricePerNight || !newRoom.capacity || newRoom.images.length === 0) {
+      toast({
+        title: "Validation Error",
+        description: "Please fill all required fields and add at least one image",
+        variant: "destructive",
+        duration: 5000,
+        className: "text-sm",
+      })
+      return
+    }
+
+    // Validate room type pattern
+    const validRoomTypes = [
+      "SINGLE_AC", "SINGLE_DELUXE", "SINGLE_NORMAL",
+      "DOUBLE_AC", "DOUBLE_DELUXE", "DOUBLE_NORMAL",
+      "FOUR_SEATER_AC", "FOUR_SEATER_DELUXE", "FOUR_SEATER_NORMAL"
+    ]
+    
+    if (!validRoomTypes.includes(newRoom.roomType)) {
+      toast({
+        title: "Invalid Room Type",
+        description: "Please select a valid room type",
+        variant: "destructive",
+        duration: 5000,
+        className: "text-sm",
+      })
+      return
+    }
+
+    try {
+      setIsCreatingRoom(true)
+      
+      // Get admin token for authentication
+      const adminToken = localStorage.getItem("adminToken")
+      if (!adminToken) {
+        toast({
+          title: "Authentication Required",
+          description: "Please log in as admin to create rooms",
+          variant: "destructive",
+          duration: 5000,
+          className: "text-sm",
+        })
+        router.push("/admin/login")
+        return
+      }
+
+      // Create room data object
+      const roomData = {
+        roomType: newRoom.roomType,
+        pricePerNight: Number.parseInt(newRoom.pricePerNight),
+        capacity: Number.parseInt(newRoom.capacity),
+        description: newRoom.description || '',
+        amenities: newRoom.amenities || ''
+      }
+
+      // Create FormData for multipart upload
+      const formData = new FormData()
+      formData.append('roomData', JSON.stringify(roomData))
+      
+      // Append all images to FormData
+      newRoom.images.forEach((image, index) => {
+        if (image instanceof File) {
+          formData.append('image', image)
+        }
+      })
+
+      // Make API call to create room
+      const response = await fetch('http://localhost:8080/admin/room/create', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${adminToken}`,
+        },
+        body: formData
+      })
+
+      if (!response.ok) {
+        const errorData = await response.json()
+        throw new Error(errorData.message || 'Failed to create room')
+      }
+
+      const createdRoom = await response.json()
+      console.log("Room created successfully:", createdRoom)
+      console.log("Created room images:", createdRoom.images)
+      console.log("Created room structure:", JSON.stringify(createdRoom, null, 2))
+
+      // Check if the response status is 201 (CREATED)
+      if (response.status === 201) {
+        // Refresh the rooms list to get the updated data from the server
+        await fetchRooms()
+        
+        // Reset form
+        setNewRoom({
+          roomType: "",
+          pricePerNight: "",
+          capacity: "",
+          description: "",
+          amenities: "",
+          images: [] as File[],
+        })
+        setIsCreateDialogOpen(false)
+        
+        // Show green success toast for CREATED status
+        toast({
+          title: "Room Created Successfully!",
+          description: "New room has been added to the system",
+          variant: "default",
+          duration: 5000,
+          className: "bg-green-500 border-green-200 text-white text-sm",
+        })
+      } else {
+        // Handle other success statuses (200, etc.)
+        await fetchRooms()
+        setNewRoom({
+          roomType: "",
+          pricePerNight: "",
+          capacity: "",
+          description: "",
+          amenities: "",
+          images: [] as File[],
+        })
+        setIsCreateDialogOpen(false)
+        toast({
+          title: "Room Created!",
+          description: "Room has been created successfully",
+          variant: "default",
+          duration: 5000,
+          className: "text-sm",
+        })
+      }
+    } catch (error) {
+      console.error("Error creating room:", error)
+      toast({
+        title: "Creation Failed",
+        description: `Failed to create room: ${error instanceof Error ? error.message : 'Unknown error'}`,
+        variant: "destructive",
+        duration: 5000,
+        className: "text-sm",
+      })
+    } finally {
+      setIsCreatingRoom(false)
+    }
+  }
+
+  const handleUpdateRoom = async () => {
+    if (!editingRoom) return
+
+    // Here you would make API call to update room
+    console.log("Updating room:", editingRoom)
+
+    setRooms(rooms.map((room) => (room.id === editingRoom.id ? editingRoom : room)))
+    setEditingRoom(null)
+    toast({
+      title: "Room Updated!",
+      description: "Room has been updated successfully",
+      variant: "default",
+      duration: 5000,
+      className: "text-sm",
+    })
+  }
+
+  const handleDeleteRoom = (roomId: string | number, roomType?: string) => {
+    setItemToDelete({ 
+      type: 'room', 
+      id: roomId, 
+      name: roomType || 'this room' 
+    })
+    setShowDeleteConfirm(true)
+  }
+
+  const confirmDelete = async () => {
+    if (!itemToDelete) return
+
+    try {
+      const adminToken = localStorage.getItem("adminToken")
+      if (!adminToken) {
+        toast({
+          title: "Authentication Required",
+          description: "Please log in as admin to perform this action",
+          variant: "destructive",
+          duration: 5000,
+          className: "text-sm",
+        })
+        router.push("/admin/login")
+        return
+      }
+
+      if (itemToDelete.type === 'room') {
+        const response = await fetch(`http://localhost:8080/admin/room/delete/${itemToDelete.id}`, {
+          method: 'DELETE',
+          headers: {
+            'Authorization': `Bearer ${adminToken}`,
+            'Content-Type': 'application/json',
+          },
+        })
+
+        if (!response.ok) {
+          throw new Error(`Failed to delete room: ${response.status}`)
+        }
+
+        await fetchRooms()
+        toast({
+          title: "Room Deleted!",
+          description: "Room has been deleted successfully",
+          variant: "destructive",
+          duration: 5000,
+          className: "text-sm",
+        })
+      } else if (itemToDelete.type === 'booking') {
+        setBookings(bookings.filter((booking) => booking.id !== itemToDelete.id))
+        toast({
+          title: "Booking Deleted!",
+          description: "Booking has been deleted successfully",
+          variant: "destructive",
+          duration: 5000,
+          className: "text-sm",
+        })
+      }
+    } catch (error) {
+      console.error('Error deleting item:', error)
+      toast({
+        title: "Deletion Failed",
+        description: `Failed to delete ${itemToDelete.type}: ${error instanceof Error ? error.message : 'Unknown error'}`,
+        variant: "destructive",
+        duration: 5000,
+        className: "text-sm",
+      })
+    } finally {
+      setShowDeleteConfirm(false)
+      setItemToDelete(null)
+    }
+  }
+
+  const handleApproveBooking = async (bookingId: number) => {
+    const updatedBookings = bookings.map((booking) =>
+      booking.id === bookingId ? { ...booking, status: "CONFIRMED" as const } : booking,
+    )
+    setBookings(updatedBookings)
+    toast({
+      title: "Booking Approved!",
+      description: "Booking has been approved successfully",
+      variant: "default",
+      duration: 5000,
+      className: "text-sm",
+    })
+  }
+
+  const handleDeleteBooking = (bookingId: number, customerName?: string) => {
+    setItemToDelete({ 
+      type: 'booking', 
+      id: bookingId, 
+      name: customerName || 'this booking' 
+    })
+    setShowDeleteConfirm(true)
+  }
+
+  const handleCancelBooking = async (bookingId: number) => {
+    const updatedBookings = bookings.map((booking) =>
+      booking.id === bookingId ? { ...booking, status: "CANCELLED" as const } : booking,
+    )
+    setBookings(updatedBookings)
+    toast({
+      title: "Booking Cancelled!",
+      description: "Booking has been cancelled successfully",
+      variant: "destructive",
+      duration: 5000,
+      className: "text-sm",
+    })
+  }
+
+  const getStatusColor = (status: string) => {
+    switch (status) {
+      case "PENDING":
+        return "bg-yellow-500"
+      case "CONFIRMED":
+        return "bg-green-500"
+      case "CANCELLED":
+        return "bg-red-500"
+      case "COMPLETED":
+        return "bg-blue-500"
+      default:
+        return "bg-gray-500"
+    }
+  }
+
+  // Filter rooms based on search term
+  const filteredRooms = rooms.filter((room) => {
+    const roomTypeLabel = roomTypeLabels[room.roomType as keyof typeof roomTypeLabels]
+    return roomTypeLabel.toLowerCase().includes(searchTerm.toLowerCase())
+  })
+
+  const getStatusActions = (booking: Booking) => {
+    switch (booking.status) {
+      case "PENDING":
+        return (
+          <div className="flex gap-2">
+            <Button
+              size="sm"
+              onClick={() => handleApproveBooking(booking.id)}
+              className="bg-green-600 hover:bg-green-700"
+            >
+              Approve
+            </Button>
+            <Button size="sm" variant="outline" onClick={() => handleCancelBooking(booking.id)}>
+              Cancel
+            </Button>
+            <Button size="sm" variant="destructive" onClick={() => handleDeleteBooking(booking.id, booking.customerName)}>
+              Delete
+            </Button>
+          </div>
+        )
+      case "CONFIRMED":
+        return (
+          <div className="flex gap-2">
+            <Button size="sm" variant="outline" onClick={() => handleCancelBooking(booking.id)}>
+              Cancel
+            </Button>
+            <Button size="sm" variant="destructive" onClick={() => handleDeleteBooking(booking.id, booking.customerName)}>
+              Delete
+            </Button>
+          </div>
+        )
+      default:
+        return (
+          <Button size="sm" variant="destructive" onClick={() => handleDeleteBooking(booking.id, booking.customerName)}>
+            Delete
+          </Button>
+        )
+    }
+  }
+
+  const handleLogout = () => {
+    localStorage.removeItem("adminToken")
+    router.push("/admin/login")
+  }
+
+
+
+  // Don't render until mounted to prevent hydration issues
+  if (!mounted) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900 mx-auto mb-4"></div>
+          <p className="text-gray-600">Loading...</p>
+        </div>
+      </div>
+    )
+  }
+
+  return (
+    <div className="min-h-screen bg-gray-50">
+      {/* Header */}
+      <header className="bg-white shadow-sm border-b">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex justify-between items-center h-16">
+            <h1 className="text-2xl font-bold text-gray-900">Admin Dashboard</h1>
+            <div className="flex items-center space-x-4">
+              <Button variant="outline" onClick={handleLogout}>
+                Logout
+              </Button>
+            </div>
+          </div>
+        </div>
+      </header>
+
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        {/* Stats Cards */}
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">Total Rooms</CardTitle>
+              <BedDouble className="h-4 w-4 text-muted-foreground" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">{rooms.length}</div>
+            </CardContent>
+          </Card>
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">Available Rooms</CardTitle>
+              <BedDouble className="h-4 w-4 text-muted-foreground" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">{rooms.filter((r) => r.available).length}</div>
+            </CardContent>
+          </Card>
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">Total Bookings</CardTitle>
+              <Calendar className="h-4 w-4 text-muted-foreground" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">{bookings.length}</div>
+            </CardContent>
+          </Card>
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">Revenue</CardTitle>
+              <DollarSign className="h-4 w-4 text-muted-foreground" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">₹1,25,000</div>
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* Tab Navigation */}
+        <div className="flex space-x-1 mb-6">
+          <Button
+            variant={activeTab === "rooms" ? "default" : "outline"}
+            onClick={() => setActiveTab("rooms")}
+            className="flex items-center gap-2"
+          >
+            <BedDouble className="h-4 w-4" />
+            Room Management
+          </Button>
+          <Button
+            variant={activeTab === "bookings" ? "default" : "outline"}
+            onClick={() => setActiveTab("bookings")}
+            className="flex items-center gap-2"
+          >
+            <Calendar className="h-4 w-4" />
+            Booking Management
+          </Button>
+        </div>
+
+        {/* Room Management Tab */}
+        {activeTab === "rooms" && (
+          <Card>
+            <CardHeader>
+              <div className="flex justify-between items-center mb-4">
+                <CardTitle>Room Management</CardTitle>
+                <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
+                  <DialogTrigger asChild>
+                    <Button>
+                      <Plus className="h-4 w-4 mr-2" />
+                      Add New Room
+                    </Button>
+                  </DialogTrigger>
+                  <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
+                    <DialogHeader>
+                      <DialogTitle>Create New Room</DialogTitle>
+                    </DialogHeader>
+                    <div className="space-y-4">
+                      <div className="grid grid-cols-2 gap-4">
+                        <div>
+                          <Label htmlFor="roomType">Room Type *</Label>
+                          <Select
+                            value={newRoom.roomType}
+                            onValueChange={(value) => setNewRoom({ ...newRoom, roomType: value })}
+                          >
+                            <SelectTrigger>
+                              <SelectValue placeholder="Select room type" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {roomTypes.map((type) => (
+                                <SelectItem key={type} value={type}>
+                                  {roomTypeLabels[type as keyof typeof roomTypeLabels]}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        </div>
+                        <div>
+                          <Label htmlFor="capacity">Capacity *</Label>
+                          <Input
+                            id="capacity"
+                            type="number"
+                            min="1"
+                            max="4"
+                            value={newRoom.capacity}
+                            onChange={(e) => setNewRoom({ ...newRoom, capacity: e.target.value })}
+                            placeholder="Number of guests"
+                          />
+                        </div>
+                      </div>
+                      <div>
+                        <Label htmlFor="pricePerNight">Price Per Night ($) *</Label>
+                        <Input
+                          id="pricePerNight"
+                          type="number"
+                          value={newRoom.pricePerNight}
+                          onChange={(e) => setNewRoom({ ...newRoom, pricePerNight: e.target.value })}
+                          placeholder="Enter price per night"
+                        />
+                      </div>
+                      <div>
+                        <Label htmlFor="description">Description</Label>
+                        <Textarea
+                          id="description"
+                          value={newRoom.description}
+                          onChange={(e) => setNewRoom({ ...newRoom, description: e.target.value })}
+                          placeholder="Room description"
+                        />
+                      </div>
+                      <div>
+                        <Label htmlFor="amenities">Amenities (comma separated)</Label>
+                        <Input
+                          id="amenities"
+                          value={newRoom.amenities}
+                          onChange={(e) => setNewRoom({ ...newRoom, amenities: e.target.value })}
+                          placeholder="AC, WiFi, TV, Mini Bar"
+                        />
+                      </div>
+                      <ImageUpload
+                        images={newRoom.images}
+                        onImagesChange={(images) => setNewRoom({ ...newRoom, images })}
+                        maxImages={10}
+                        label="Room Images"
+                        required={true}
+                      />
+                      <Button 
+                        onClick={handleCreateRoom} 
+                        className="w-full"
+                        disabled={isCreatingRoom}
+                      >
+                        {isCreatingRoom ? "Creating Room..." : "Create Room"}
+                      </Button>
+                    </div>
+                  </DialogContent>
+                </Dialog>
+              </div>
+              
+              {/* Search Bar */}
+              <div className="mb-6">
+                <div className="relative">
+                  <Input
+                    type="text"
+                    placeholder="Search by room type..."
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                    className="pl-10"
+                  />
+                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                    <svg className="h-5 w-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                    </svg>
+                  </div>
+                </div>
+                {searchTerm && (
+                  <p className="text-sm text-gray-600 mt-2">
+                    Showing {filteredRooms.length} of {rooms.length} rooms
+                  </p>
+                )}
+              </div>
+            </CardHeader>
+            <CardContent>
+              <div className="grid grid-cols-1 md:grid-cols-1 lg:grid-cols-2 xl:grid-cols-2 gap-6">
+                {filteredRooms.map((room) => (
+                  <Card key={room.id} className="overflow-hidden h-[600px] flex flex-col">
+                    <div className="relative h-64">
+                      <ImageSlider images={room.images} roomId={room.id} />
+                      <Badge className={`absolute top-2 right-2 z-10 ${room.available ? "bg-green-500" : "bg-red-500"}`}>
+                        {room.available ? "Available" : "Occupied"}
+                      </Badge>
+                    </div>
+                    <CardHeader>
+                      <CardTitle className="flex justify-between items-center">
+                        <span>{roomTypeLabels[room.roomType as keyof typeof roomTypeLabels]}</span>
+                        <span className="text-blue-600">₹{room.pricePerNight}/night</span>
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent className="flex-1 flex flex-col">
+                      <div className="flex items-center mb-2">
+                        <Users className="h-4 w-4 mr-2 text-gray-500" />
+                        <span className="text-sm text-gray-600">Up to {room.capacity} guests</span>
+                      </div>
+                      <p className="text-gray-600 mb-4 text-sm flex-1">{room.description}</p>
+                      <div className="flex flex-wrap gap-1 mb-4">
+                        {room.amenities && Array.isArray(room.amenities) && room.amenities.map((amenity, index) => (
+                          <Badge key={index} variant="secondary" className="text-xs">
+                            {amenity}
+                          </Badge>
+                        ))}
+                      </div>
+                      <div className="flex gap-2 mt-auto h-10">
+                        <Button variant="outline" size="sm" onClick={() => setEditingRoom(room)} className="flex-1 h-8">
+                          <Edit className="h-4 w-4 mr-1" />
+                          Edit
+                        </Button>
+                        <Button
+                          variant="destructive"
+                          size="sm"
+                          onClick={() => handleDeleteRoom(room.id, roomTypeLabels[room.roomType as keyof typeof roomTypeLabels])}
+                          className="flex-1 h-8"
+                        >
+                          <Trash2 className="h-4 w-4 mr-1" />
+                          Delete
+                        </Button>
+                      </div>
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
+        {/* Booking Management Tab */}
+        {activeTab === "bookings" && (
+          <Card>
+            <CardHeader>
+              <CardTitle>Booking Management</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-4">
+                {bookings.length === 0 ? (
+                  <div className="text-center py-8">
+                    <p className="text-gray-500">No bookings found</p>
+                  </div>
+                ) : (
+                  bookings.map((booking) => (
+                    <Card key={booking.id} className="border-l-4 border-l-blue-500">
+                      <CardContent className="p-4">
+                        <div className="flex justify-between items-start mb-4">
+                          <div>
+                            <h3 className="font-semibold text-lg">
+                              {roomTypeLabels[booking.roomType as keyof typeof roomTypeLabels]}
+                            </h3>
+                            <p className="text-sm text-gray-600">Booking ID: #{booking.id}</p>
+                            <p className="text-sm text-gray-600">Customer: {booking.customerName}</p>
+                            <p className="text-sm text-gray-600">Email: {booking.customerEmail}</p>
+                            {booking.customerPhone && (
+                              <p className="text-sm text-gray-600">Phone: {booking.customerPhone}</p>
+                            )}
+                          </div>
+                          <Badge className={getStatusColor(booking.status)}>{booking.status}</Badge>
+                        </div>
+
+                        <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-4">
+                          <div>
+                            <Label className="text-sm font-medium text-gray-500">Check-in</Label>
+                            <p className="font-medium">{new Date(booking.checkInDate).toLocaleDateString()}</p>
+                          </div>
+                          <div>
+                            <Label className="text-sm font-medium text-gray-500">Check-out</Label>
+                            <p className="font-medium">{new Date(booking.checkOutDate).toLocaleDateString()}</p>
+                          </div>
+                          <div>
+                            <Label className="text-sm font-medium text-gray-500">Total Amount</Label>
+                            <p className="font-medium text-green-600">₹{booking.totalPrice}</p>
+                          </div>
+                          <div>
+                            <Label className="text-sm font-medium text-gray-500">Booked On</Label>
+                            <p className="font-medium">{new Date(booking.bookingCreated).toLocaleDateString()}</p>
+                          </div>
+                        </div>
+
+                        {booking.notes && (
+                          <div className="mb-4">
+                            <Label className="text-sm font-medium text-gray-500">Notes</Label>
+                            <p className="text-sm text-gray-700 bg-gray-50 p-2 rounded">{booking.notes}</p>
+                          </div>
+                        )}
+
+                        <div className="flex justify-between items-center">
+                          <p className="text-sm text-gray-500">Status: {booking.status}</p>
+                          {getStatusActions(booking)}
+                        </div>
+                      </CardContent>
+                    </Card>
+                  ))
+                )}
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
+        {/* Edit Room Dialog */}
+        {editingRoom && (
+          <Dialog open={!!editingRoom} onOpenChange={() => setEditingRoom(null)}>
+            <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
+              <DialogHeader>
+                <DialogTitle>Edit Room</DialogTitle>
+              </DialogHeader>
+              <div className="space-y-4">
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <Label htmlFor="editRoomType">Room Type</Label>
+                    <Select
+                      value={editingRoom.roomType}
+                      onValueChange={(value) => setEditingRoom({ ...editingRoom, roomType: value })}
+                    >
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {roomTypes.map((type) => (
+                          <SelectItem key={type} value={type}>
+                            {roomTypeLabels[type as keyof typeof roomTypeLabels]}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div>
+                    <Label htmlFor="editCapacity">Capacity</Label>
+                    <Input
+                      id="editCapacity"
+                      type="number"
+                      min="1"
+                      max="4"
+                      value={editingRoom.capacity}
+                      onChange={(e) => setEditingRoom({ ...editingRoom, capacity: Number.parseInt(e.target.value) })}
+                    />
+                  </div>
+                </div>
+                <div>
+                  <Label htmlFor="editPrice">Price Per Night (₹)</Label>
+                  <Input
+                    id="editPrice"
+                    type="number"
+                    value={editingRoom.pricePerNight}
+                    onChange={(e) => setEditingRoom({ ...editingRoom, pricePerNight: Number.parseInt(e.target.value) })}
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="editDescription">Description</Label>
+                  <Textarea
+                    id="editDescription"
+                    value={editingRoom.description}
+                    onChange={(e) => setEditingRoom({ ...editingRoom, description: e.target.value })}
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="editAmenities">Amenities (comma separated)</Label>
+                  <Input
+                    id="editAmenities"
+                    value={Array.isArray(editingRoom.amenities) ? editingRoom.amenities.join(", ") : editingRoom.amenities || ""}
+                    onChange={(e) =>
+                      setEditingRoom({ ...editingRoom, amenities: e.target.value.split(",").map((a) => a.trim()) })
+                    }
+                  />
+                </div>
+                <div>
+                  <Label>Current Images</Label>
+                  <div className="space-y-2">
+                    {editingRoom.images.length > 0 && (
+                      <div className="grid grid-cols-3 gap-2">
+                        {editingRoom.images.map((image, index) => (
+                          <div key={index} className="relative">
+                            <Image
+                              src={image || "/placeholder.svg"}
+                              alt={`Room image ${index + 1}`}
+                              width={100}
+                              height={80}
+                              className="object-cover rounded border"
+                            />
+                            <Button
+                              type="button"
+                              variant="destructive"
+                              size="sm"
+                              className="absolute top-1 right-1 h-5 w-5 p-0 text-xs"
+                              onClick={() => removeEditImage(index)}
+                            >
+                              ×
+                            </Button>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                    <Input type="file" accept="image/*" multiple onChange={handleEditImageUpload} className="w-full" />
+                    <p className="text-sm text-gray-500">Add more images to the room</p>
+                  </div>
+                </div>
+                <div className="flex items-center space-x-2">
+                  <input
+                    type="checkbox"
+                    id="available"
+                    checked={editingRoom.available}
+                    onChange={(e) => setEditingRoom({ ...editingRoom, available: e.target.checked })}
+                  />
+                  <Label htmlFor="available">Available for booking</Label>
+                </div>
+                <Button onClick={handleUpdateRoom} className="w-full">
+                  Update Room
+                </Button>
+              </div>
+            </DialogContent>
+          </Dialog>
+        )}
+
+        {/* Delete Confirmation Dialog */}
+        <Dialog open={showDeleteConfirm} onOpenChange={setShowDeleteConfirm}>
+          <DialogContent className="max-w-md">
+            <DialogHeader>
+              <DialogTitle className="text-red-600">Confirm Deletion</DialogTitle>
+            </DialogHeader>
+            <div className="space-y-4">
+              <div className="flex items-center space-x-3">
+                <div className="flex-shrink-0">
+                  <div className="w-10 h-10 bg-red-100 rounded-full flex items-center justify-center">
+                    <Trash2 className="h-5 w-5 text-red-600" />
+                  </div>
+                </div>
+                <div>
+                  <p className="text-sm font-medium text-gray-900">
+                    Are you sure you want to delete {itemToDelete?.name}?
+                  </p>
+                  <p className="text-sm text-gray-500 mt-1">
+                    This action cannot be undone. The {itemToDelete?.type} will be permanently removed.
+                  </p>
+                </div>
+              </div>
+              <div className="flex gap-3 pt-4">
+                <Button
+                  variant="outline"
+                  onClick={() => {
+                    setShowDeleteConfirm(false)
+                    setItemToDelete(null)
+                  }}
+                  className="flex-1"
+                >
+                  Cancel
+                </Button>
+                <Button
+                  variant="destructive"
+                  onClick={confirmDelete}
+                  className="flex-1"
+                >
+                  Delete
+                </Button>
+              </div>
+            </div>
+          </DialogContent>
+        </Dialog>
+        <Toaster />
+      </div>
+    </div>
+  )
+}
