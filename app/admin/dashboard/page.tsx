@@ -95,6 +95,7 @@ export default function AdminDashboard() {
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
   const [itemToDelete, setItemToDelete] = useState<{ type: 'room' | 'booking', id: string | number, name?: string } | null>(null)
   const [searchTerm, setSearchTerm] = useState("")
+  const [bookingSearchTerm, setBookingSearchTerm] = useState("")
   const router = useRouter()
   const { toast } = useToast()
 
@@ -621,6 +622,16 @@ export default function AdminDashboard() {
     return roomTypeLabel.toLowerCase().includes(searchTerm.toLowerCase())
   })
 
+  // Filter bookings based on search term
+  const filteredBookings = bookings.filter((booking) => {
+    const searchLower = bookingSearchTerm.toLowerCase()
+    return (
+      (booking.id?.toString() || '').toLowerCase().includes(searchLower) ||
+      booking.customerName.toLowerCase().includes(searchLower) ||
+      booking.customerEmail.toLowerCase().includes(searchLower)
+    )
+  })
+
   const getStatusActions = (booking: Booking) => {
     switch (booking.bookingStatus) {
       case "PENDING":
@@ -644,6 +655,13 @@ export default function AdminDashboard() {
       case "CONFIRMED":
         return (
           <div className="flex gap-2">
+            <Button
+              size="sm"
+              onClick={() => handleApproveBooking(booking.id!)}
+              className="bg-green-600 hover:bg-green-700"
+            >
+              Approve
+            </Button>
             <Button size="sm" variant="outline" onClick={() => handleCancelBooking(booking.id!)}>
               Cancel
             </Button>
@@ -654,9 +672,18 @@ export default function AdminDashboard() {
         )
       default:
         return (
-          <Button size="sm" variant="destructive" onClick={() => handleDeleteBooking(booking.id!, booking.customerName)}>
-            Delete
-          </Button>
+          <div className="flex gap-2">
+            <Button
+              size="sm"
+              onClick={() => handleApproveBooking(booking.id!)}
+              className="bg-green-600 hover:bg-green-700"
+            >
+              Approve
+            </Button>
+            <Button size="sm" variant="destructive" onClick={() => handleDeleteBooking(booking.id!, booking.customerName)}>
+              Delete
+            </Button>
+          </div>
         )
     }
   }
@@ -933,16 +960,37 @@ export default function AdminDashboard() {
         {activeTab === "bookings" && (
           <Card>
             <CardHeader>
-              <CardTitle>Booking Management</CardTitle>
+              <div className="flex justify-between items-center">
+                <CardTitle>Booking Management</CardTitle>
+                <div className="flex items-center space-x-2">
+                  <Input
+                    placeholder="Search by booking ID, name, or email..."
+                    value={bookingSearchTerm}
+                    onChange={(e) => setBookingSearchTerm(e.target.value)}
+                    className="w-64"
+                  />
+                  {bookingSearchTerm && (
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setBookingSearchTerm("")}
+                    >
+                      Clear
+                    </Button>
+                  )}
+                </div>
+              </div>
             </CardHeader>
             <CardContent>
               <div className="space-y-4">
-                {bookings.length === 0 ? (
+                {filteredBookings.length === 0 ? (
                   <div className="text-center py-8">
-                    <p className="text-gray-500">No bookings found</p>
+                    <p className="text-gray-500">
+                      {bookings.length === 0 ? "No bookings found" : "No bookings match your search"}
+                    </p>
                   </div>
                 ) : (
-                  bookings.map((booking) => (
+                  filteredBookings.map((booking) => (
                     <Card key={booking.id} className="border-l-4 border-l-blue-500">
                       <CardContent className="p-4">
                         <div className="flex justify-between items-start mb-4">
