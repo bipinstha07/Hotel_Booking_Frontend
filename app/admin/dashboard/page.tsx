@@ -31,7 +31,7 @@ interface Room {
 }
 
 interface Booking {
-  id?: string
+  id?: string | number
   customerName: string
   customerEmail: string
   phoneNumber: number
@@ -96,6 +96,7 @@ export default function AdminDashboard() {
   const [itemToDelete, setItemToDelete] = useState<{ type: 'room' | 'booking', id: string | number, name?: string } | null>(null)
   const [searchTerm, setSearchTerm] = useState("")
   const [bookingSearchTerm, setBookingSearchTerm] = useState("")
+  const [bookingStatusFilter, setBookingStatusFilter] = useState<string>("ALL")
   const router = useRouter()
   const { toast } = useToast()
 
@@ -538,10 +539,47 @@ export default function AdminDashboard() {
           className: "text-sm",
         })
       } else if (itemToDelete.type === 'booking') {
-        setBookings(bookings.filter((booking) => booking.id !== itemToDelete.id))
+        // Call the backend API to update booking status to DELETED
+        console.log('Making API call to delete booking:', {
+          bookingId: itemToDelete.id,
+          bookingStatus: "DELETED",
+          adminToken: adminToken ? 'Present' : 'Missing'
+        })
+
+        let response
+        try {
+          response = await fetch(`http://localhost:8080/admin/room/booking/update/${itemToDelete.id}?bookingStatus=DELETED`, {
+            method: 'PATCH',
+            headers: {
+              'Authorization': `Bearer ${adminToken}`,
+              'Content-Type': 'application/json',
+            }
+          })
+        } catch (fetchError) {
+          console.error('Network error during fetch:', fetchError)
+          throw new Error(`Network error: ${fetchError instanceof Error ? fetchError.message : 'Unknown network error'}`)
+        }
+
+        console.log('API Response status:', response.status)
+
+        if (!response.ok) {
+          const errorText = await response.text()
+          console.error('API Error response:', errorText)
+          throw new Error(`Failed to delete booking: ${response.status} - ${errorText}`)
+        }
+
+        // Parse response as text (since backend returns plain string)
+        const responseData = await response.text()
+        console.log('API Response data:', responseData)
+
+        // Update local state after successful API call - mark as deleted instead of removing
+        const updatedBookings = bookings.map((booking) =>
+          booking.id === itemToDelete.id ? { ...booking, bookingStatus: "DELETED" } : booking,
+        )
+        setBookings(updatedBookings)
         toast({
           title: "Booking Deleted!",
-          description: "Booking has been deleted successfully",
+          description: "Booking has been marked as deleted",
           variant: "destructive",
           duration: 5000,
           className: "text-sm",
@@ -562,21 +600,81 @@ export default function AdminDashboard() {
     }
   }
 
-  const handleApproveBooking = async (bookingId: string) => {
-    const updatedBookings = bookings.map((booking) =>
-      booking.id === bookingId ? { ...booking, bookingStatus: "CONFIRMED" } : booking,
-    )
-    setBookings(updatedBookings)
-    toast({
-      title: "Booking Approved!",
-      description: "Booking has been approved successfully",
-      variant: "default",
-      duration: 5000,
-      className: "text-sm",
-    })
+  const handleApproveBooking = async (bookingId: string | number) => {
+    try {
+      const adminToken = localStorage.getItem("adminToken")
+      if (!adminToken) {
+        toast({
+          title: "Authentication Required",
+          description: "Please log in as admin to perform this action",
+          variant: "destructive",
+          duration: 5000,
+          className: "text-sm",
+        })
+        router.push("/admin/login")
+        return
+      }
+
+      // Call the backend API to update booking status
+      console.log('Making API call to update booking status:', {
+        bookingId,
+        bookingStatus: "CONFIRMED",
+        adminToken: adminToken ? 'Present' : 'Missing'
+      })
+
+      let response
+      try {
+        response = await fetch(`http://localhost:8080/admin/room/booking/update/${bookingId}?bookingStatus=CONFIRMED`, {
+          method: 'PATCH',
+          headers: {
+            'Authorization': `Bearer ${adminToken}`,
+            'Content-Type': 'application/json',
+          }
+        })
+      } catch (fetchError) {
+        console.error('Network error during fetch:', fetchError)
+        throw new Error(`Network error: ${fetchError instanceof Error ? fetchError.message : 'Unknown network error'}`)
+      }
+
+      console.log('API Response status:', response.status)
+      console.log('API Response headers:', response.headers)
+
+      if (!response.ok) {
+        const errorText = await response.text()
+        console.error('API Error response:', errorText)
+        throw new Error(`Failed to update booking status: ${response.status} - ${errorText}`)
+      }
+
+      // Parse response as text (since backend returns plain string)
+      const responseData = await response.text()
+      console.log('API Response data:', responseData)
+
+      // Update local state after successful API call
+      const updatedBookings = bookings.map((booking) =>
+        booking.id === bookingId ? { ...booking, bookingStatus: "CONFIRMED" } : booking,
+      )
+      setBookings(updatedBookings)
+      
+      toast({
+        title: "Booking Approved!",
+        description: "Booking has been approved successfully",
+        variant: "default",
+        duration: 5000,
+        className: "text-sm",
+      })
+    } catch (error) {
+      console.error('Error updating booking status:', error)
+      toast({
+        title: "Update Failed",
+        description: `Failed to approve booking: ${error instanceof Error ? error.message : 'Unknown error'}`,
+        variant: "destructive",
+        duration: 5000,
+        className: "text-sm",
+      })
+    }
   }
 
-  const handleDeleteBooking = (bookingId: string, customerName?: string) => {
+  const handleDeleteBooking = (bookingId: string | number, customerName?: string) => {
     setItemToDelete({ 
       type: 'booking', 
       id: bookingId, 
@@ -585,18 +683,150 @@ export default function AdminDashboard() {
     setShowDeleteConfirm(true)
   }
 
-  const handleCancelBooking = async (bookingId: string) => {
-    const updatedBookings = bookings.map((booking) =>
-      booking.id === bookingId ? { ...booking, bookingStatus: "CANCELLED" } : booking,
-    )
-    setBookings(updatedBookings)
-    toast({
-      title: "Booking Cancelled!",
-      description: "Booking has been cancelled successfully",
-      variant: "destructive",
-      duration: 5000,
-      className: "text-sm",
-    })
+  const handleCancelBooking = async (bookingId: string | number) => {
+    try {
+      const adminToken = localStorage.getItem("adminToken")
+      if (!adminToken) {
+        toast({
+          title: "Authentication Required",
+          description: "Please log in as admin to perform this action",
+          variant: "destructive",
+          duration: 5000,
+          className: "text-sm",
+        })
+        router.push("/admin/login")
+        return
+      }
+
+      // Call the backend API to update booking status
+      console.log('Making API call to cancel booking:', {
+        bookingId,
+        bookingStatus: "CANCELLED",
+        adminToken: adminToken ? 'Present' : 'Missing'
+      })
+
+      let response
+      try {
+        response = await fetch(`http://localhost:8080/admin/room/booking/update/${bookingId}?bookingStatus=CANCELLED`, {
+          method: 'PATCH',
+          headers: {
+            'Authorization': `Bearer ${adminToken}`,
+            'Content-Type': 'application/json',
+          }
+        })
+      } catch (fetchError) {
+        console.error('Network error during fetch:', fetchError)
+        throw new Error(`Network error: ${fetchError instanceof Error ? fetchError.message : 'Unknown network error'}`)
+      }
+
+      console.log('API Response status:', response.status)
+
+      if (!response.ok) {
+        const errorText = await response.text()
+        console.error('API Error response:', errorText)
+        throw new Error(`Failed to update booking status: ${response.status} - ${errorText}`)
+      }
+
+      // Parse response as text (since backend returns plain string)
+      const responseData = await response.text()
+      console.log('API Response data:', responseData)
+
+      // Update local state after successful API call
+      const updatedBookings = bookings.map((booking) =>
+        booking.id === bookingId ? { ...booking, bookingStatus: "CANCELLED" } : booking,
+      )
+      setBookings(updatedBookings)
+      
+      toast({
+        title: "Booking Cancelled!",
+        description: "Booking has been cancelled successfully",
+        variant: "destructive",
+        duration: 5000,
+        className: "text-sm",
+      })
+    } catch (error) {
+      console.error('Error updating booking status:', error)
+      toast({
+        title: "Update Failed",
+        description: `Failed to cancel booking: ${error instanceof Error ? error.message : 'Unknown error'}`,
+        variant: "destructive",
+        duration: 5000,
+        className: "text-sm",
+      })
+    }
+  }
+
+  const handleCompleteBooking = async (bookingId: string | number) => {
+    try {
+      const adminToken = localStorage.getItem("adminToken")
+      if (!adminToken) {
+        toast({
+          title: "Authentication Required",
+          description: "Please log in as admin to perform this action",
+          variant: "destructive",
+          duration: 5000,
+          className: "text-sm",
+        })
+        router.push("/admin/login")
+        return
+      }
+
+      // Call the backend API to update booking status
+      console.log('Making API call to complete booking:', {
+        bookingId,
+        bookingStatus: "COMPLETED",
+        adminToken: adminToken ? 'Present' : 'Missing'
+      })
+
+      let response
+      try {
+        response = await fetch(`http://localhost:8080/admin/room/booking/update/${bookingId}?bookingStatus=COMPLETED`, {
+          method: 'PATCH',
+          headers: {
+            'Authorization': `Bearer ${adminToken}`,
+            'Content-Type': 'application/json',
+          }
+        })
+      } catch (fetchError) {
+        console.error('Network error during fetch:', fetchError)
+        throw new Error(`Network error: ${fetchError instanceof Error ? fetchError.message : 'Unknown network error'}`)
+      }
+
+      console.log('API Response status:', response.status)
+
+      if (!response.ok) {
+        const errorText = await response.text()
+        console.error('API Error response:', errorText)
+        throw new Error(`Failed to update booking status: ${response.status} - ${errorText}`)
+      }
+
+      // Parse response as text (since backend returns plain string)
+      const responseData = await response.text()
+      console.log('API Response data:', responseData)
+
+      // Update local state after successful API call
+      const updatedBookings = bookings.map((booking) =>
+        booking.id === bookingId ? { ...booking, bookingStatus: "COMPLETED" } : booking,
+      )
+      setBookings(updatedBookings)
+      
+      toast({
+        title: "Booking Completed!",
+        description: "Booking has been marked as completed",
+        variant: "default",
+        duration: 5000,
+        className: "text-sm",
+      })
+    } catch (error) {
+      console.error('Error updating booking status:', error)
+      toast({
+        title: "Update Failed",
+        description: `Failed to complete booking: ${error instanceof Error ? error.message : 'Unknown error'}`,
+        variant: "destructive",
+        duration: 5000,
+        className: "text-sm",
+      })
+    }
   }
 
   const getStatusColor = (status: string) => {
@@ -611,6 +841,8 @@ export default function AdminDashboard() {
         return "bg-red-100 text-red-800 border-red-200"
       case "COMPLETED":
         return "bg-blue-100 text-blue-800 border-blue-200"
+      case "DELETED":
+        return "bg-gray-100 text-gray-800 border-gray-200"
       default:
         return "bg-gray-100 text-gray-800 border-gray-200"
     }
@@ -622,14 +854,52 @@ export default function AdminDashboard() {
     return roomTypeLabel.toLowerCase().includes(searchTerm.toLowerCase())
   })
 
-  // Filter bookings based on search term
+  // Filter bookings based on search term and status filter
   const filteredBookings = bookings.filter((booking) => {
     const searchLower = bookingSearchTerm.toLowerCase()
-    return (
+    const matchesSearch = (
       (booking.id?.toString() || '').toLowerCase().includes(searchLower) ||
       booking.customerName.toLowerCase().includes(searchLower) ||
       booking.customerEmail.toLowerCase().includes(searchLower)
     )
+    
+    // Apply status filter
+    const matchesStatus = bookingStatusFilter === "ALL" || 
+      booking.bookingStatus?.toUpperCase() === bookingStatusFilter.toUpperCase()
+    
+    return matchesSearch && matchesStatus
+  }).sort((a, b) => {
+    // Sort bookings by check-in date priority: today > tomorrow > future > past
+    const today = new Date()
+    today.setHours(0, 0, 0, 0)
+    
+    const tomorrow = new Date(today)
+    tomorrow.setDate(tomorrow.getDate() + 1)
+    
+    const aCheckIn = new Date(a.checkInDate)
+    aCheckIn.setHours(0, 0, 0, 0)
+    
+    const bCheckIn = new Date(b.checkInDate)
+    bCheckIn.setHours(0, 0, 0, 0)
+    
+    // Get priority for each booking
+    const getPriority = (date: Date) => {
+      if (date.getTime() === today.getTime()) return 1 // Today
+      if (date.getTime() === tomorrow.getTime()) return 2 // Tomorrow
+      if (date > today) return 3 // Future
+      return 4 // Past
+    }
+    
+    const aPriority = getPriority(aCheckIn)
+    const bPriority = getPriority(bCheckIn)
+    
+    // Sort by priority first, then by date within same priority
+    if (aPriority !== bPriority) {
+      return aPriority - bPriority
+    }
+    
+    // Within same priority, sort by date (earliest first)
+    return aCheckIn.getTime() - bCheckIn.getTime()
   })
 
   const getStatusActions = (booking: Booking) => {
@@ -657,10 +927,10 @@ export default function AdminDashboard() {
           <div className="flex gap-2">
             <Button
               size="sm"
-              onClick={() => handleApproveBooking(booking.id!)}
-              className="bg-green-600 hover:bg-green-700"
+              onClick={() => handleCompleteBooking(booking.id!)}
+              className="bg-blue-600 hover:bg-blue-700"
             >
-              Approve
+              Complete
             </Button>
             <Button size="sm" variant="outline" onClick={() => handleCancelBooking(booking.id!)}>
               Cancel
@@ -668,6 +938,20 @@ export default function AdminDashboard() {
             <Button size="sm" variant="destructive" onClick={() => handleDeleteBooking(booking.id!, booking.customerName)}>
               Delete
             </Button>
+          </div>
+        )
+      case "COMPLETED":
+        return (
+          <div className="flex gap-2">
+            <Button size="sm" variant="destructive" onClick={() => handleDeleteBooking(booking.id!, booking.customerName)}>
+              Delete
+            </Button>
+          </div>
+        )
+      case "DELETED":
+        return (
+          <div className="flex gap-2">
+            <span className="text-sm text-gray-500 italic">No actions available</span>
           </div>
         )
       default:
@@ -759,7 +1043,7 @@ export default function AdminDashboard() {
               <DollarSign className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">₹1,25,000</div>
+              <div className="text-2xl font-bold">$1,25,000</div>
             </CardContent>
           </Card>
         </div>
@@ -917,7 +1201,7 @@ export default function AdminDashboard() {
                     <CardHeader>
                       <CardTitle className="flex justify-between items-center">
                         <span>{roomTypeLabels[room.roomType as keyof typeof roomTypeLabels]}</span>
-                        <span className="text-blue-600">₹{room.pricePerNight}/night</span>
+                        <span className="text-blue-600">${room.pricePerNight}/night</span>
                       </CardTitle>
                     </CardHeader>
                     <CardContent className="flex-1 flex flex-col">
@@ -960,7 +1244,7 @@ export default function AdminDashboard() {
         {activeTab === "bookings" && (
           <Card>
             <CardHeader>
-              <div className="flex justify-between items-center">
+              <div className="flex justify-between items-center mb-4">
                 <CardTitle>Booking Management</CardTitle>
                 <div className="flex items-center space-x-2">
                   <Input
@@ -979,6 +1263,58 @@ export default function AdminDashboard() {
                     </Button>
                   )}
                 </div>
+              </div>
+              
+              {/* Status Filter Buttons */}
+              <div className="flex flex-wrap gap-2">
+                <Button
+                  variant={bookingStatusFilter === "ALL" ? "default" : "outline"}
+                  size="sm"
+                  onClick={() => setBookingStatusFilter("ALL")}
+                  className="text-xs"
+                >
+                  ALL
+                </Button>
+                <Button
+                  variant={bookingStatusFilter === "PENDING" ? "default" : "outline"}
+                  size="sm"
+                  onClick={() => setBookingStatusFilter("PENDING")}
+                  className="text-xs bg-yellow-100 hover:bg-yellow-200 text-yellow-800 border-yellow-200"
+                >
+                  Pending
+                </Button>
+                <Button
+                  variant={bookingStatusFilter === "CONFIRMED" ? "default" : "outline"}
+                  size="sm"
+                  onClick={() => setBookingStatusFilter("CONFIRMED")}
+                  className="text-xs bg-green-100 hover:bg-green-200 text-green-800 border-green-200"
+                >
+                  Approved
+                </Button>
+                <Button
+                  variant={bookingStatusFilter === "DELETED" ? "default" : "outline"}
+                  size="sm"
+                  onClick={() => setBookingStatusFilter("DELETED")}
+                  className="text-xs bg-gray-100 hover:bg-gray-200 text-gray-800 border-gray-200"
+                >
+                  Deleted
+                </Button>
+                <Button
+                  variant={bookingStatusFilter === "CANCELLED" ? "default" : "outline"}
+                  size="sm"
+                  onClick={() => setBookingStatusFilter("CANCELLED")}
+                  className="text-xs bg-red-100 hover:bg-red-200 text-red-800 border-red-200"
+                >
+                  Cancelled
+                </Button>
+                <Button
+                  variant={bookingStatusFilter === "COMPLETED" ? "default" : "outline"}
+                  size="sm"
+                  onClick={() => setBookingStatusFilter("COMPLETED")}
+                  className="text-xs bg-blue-100 hover:bg-blue-200 text-blue-800 border-blue-200"
+                >
+                  Completed
+                </Button>
               </div>
             </CardHeader>
             <CardContent>
@@ -1017,7 +1353,7 @@ export default function AdminDashboard() {
                           </div>
                           <div>
                             <Label className="text-sm font-medium text-gray-500">Total Amount</Label>
-                            <p className="font-medium text-green-600">₹{booking.totalPrice}</p>
+                            <p className="font-medium text-green-600">${booking.totalPrice}</p>
                           </div>
                           <div>
                             <Label className="text-sm font-medium text-gray-500">Booked On</Label>
@@ -1032,8 +1368,7 @@ export default function AdminDashboard() {
                           </div>
                         )}
 
-                        <div className="flex justify-between items-center">
-                          <p className="text-sm text-gray-500">Status: {booking.bookingStatus}</p>
+                        <div className="flex justify-end items-center">
                           {getStatusActions(booking)}
                         </div>
                       </CardContent>
@@ -1085,7 +1420,7 @@ export default function AdminDashboard() {
                   </div>
                 </div>
                 <div>
-                  <Label htmlFor="editPrice">Price Per Night (₹)</Label>
+                  <Label htmlFor="editPrice">Price Per Night ($)</Label>
                   <Input
                     id="editPrice"
                     type="number"

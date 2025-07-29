@@ -762,136 +762,7 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* Image Gallery Section */}
-      <section className="bg-white py-20">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          {/* Section Header */}
-          <div className="text-center mb-16">
-            <h2 className="text-4xl md:text-5xl font-bold bg-gradient-to-r from-gray-600 to-purple-600 bg-clip-text text-transparent mb-4">
-              Experience Our Luxury
-            </h2>
-            <p className="text-lg text-gray-600 max-w-3xl mx-auto">
-              Discover the breathtaking beauty and world-class amenities that make El Cae Deara the ultimate destination for luxury hospitality
-            </p>
-          </div>
 
-          {/* Gallery Grid */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-            {/* Large Featured Image */}
-            <div className="lg:col-span-2 group relative overflow-hidden rounded-2xl shadow-lg hover:shadow-2xl transition-all duration-500">
-              <div className="aspect-[4/3] relative overflow-hidden">
-                <Image
-                  src="/heroImages/image1.jpg"
-                  alt="Luxury Hotel Lobby"
-                  fill
-                  className="object-cover group-hover:scale-110 transition-transform duration-700"
-                />
-                <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent"></div>
-                <div className="absolute bottom-6 left-6 text-white">
-                  <h3 className="text-2xl font-bold mb-2">Grand Lobby</h3>
-                  <p className="text-white/90">Experience the epitome of luxury</p>
-                </div>
-              </div>
-            </div>
-
-            {/* Medium Image */}
-            <div className="group relative overflow-hidden rounded-2xl shadow-lg hover:shadow-2xl transition-all duration-500">
-              <div className="aspect-[4/3] relative overflow-hidden">
-                <Image
-                  src="/heroImages/image2.jpg"
-                  alt="Luxury Suite"
-                  fill
-                  className="object-cover group-hover:scale-110 transition-transform duration-700"
-                />
-                <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent"></div>
-                <div className="absolute bottom-6 left-6 text-white">
-                  <h3 className="text-xl font-bold mb-2">Presidential Suite</h3>
-                  <p className="text-white/90">Ultimate comfort & privacy</p>
-                </div>
-              </div>
-            </div>
-
-            {/* Medium Image */}
-            <div className="group relative overflow-hidden rounded-2xl shadow-lg hover:shadow-2xl transition-all duration-500">
-              <div className="aspect-[4/3] relative overflow-hidden">
-                <Image
-                  src="/heroImages/image3.jpg"
-                  alt="Fine Dining"
-                  fill
-                  className="object-cover group-hover:scale-110 transition-transform duration-700"
-                />
-                <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent"></div>
-                <div className="absolute bottom-6 left-6 text-white">
-                  <h3 className="text-xl font-bold mb-2">Michelin Dining</h3>
-                  <p className="text-white/90">Culinary excellence</p>
-                </div>
-              </div>
-            </div>
-
-            {/* Small Image */}
-            <div className="group relative overflow-hidden rounded-2xl shadow-lg hover:shadow-2xl transition-all duration-500">
-              <div className="aspect-square relative overflow-hidden">
-                <Image
-                  src="/heroImages/image4.jpg"
-                  alt="Spa & Wellness"
-                  fill
-                  className="object-cover group-hover:scale-110 transition-transform duration-700"
-                />
-                <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent"></div>
-                <div className="absolute bottom-6 left-6 text-white">
-                  <h3 className="text-lg font-bold mb-2">Spa Retreat</h3>
-                  <p className="text-white/90">Rejuvenate your senses</p>
-                </div>
-              </div>
-            </div>
-
-            {/* Small Image */}
-            <div className="group relative overflow-hidden rounded-2xl shadow-lg hover:shadow-2xl transition-all duration-500">
-              <div className="aspect-square relative overflow-hidden">
-                <Image
-                  src="/heroImages/image1.jpg"
-                  alt="Pool & Recreation"
-                  fill
-                  className="object-cover group-hover:scale-110 transition-transform duration-700"
-                />
-                <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent"></div>
-                <div className="absolute bottom-6 left-6 text-white">
-                  <h3 className="text-lg font-bold mb-2">Infinity Pool</h3>
-                  <p className="text-white/90">Breathtaking views</p>
-                </div>
-              </div>
-            </div>
-
-            {/* Large Image */}
-            <div className="lg:col-span-2 group relative overflow-hidden rounded-2xl shadow-lg hover:shadow-2xl transition-all duration-500">
-              <div className="aspect-[4/3] relative overflow-hidden">
-                <Image
-                  src="/heroImages/image2.jpg"
-                  alt="Luxury Amenities"
-                  fill
-                  className="object-cover group-hover:scale-110 transition-transform duration-700"
-                />
-                <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent"></div>
-                <div className="absolute bottom-6 left-6 text-white">
-                  <h3 className="text-2xl font-bold mb-2">Private Beach</h3>
-                  <p className="text-white/90">Exclusive access to pristine shores</p>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          {/* Gallery Navigation */}
-          <div className="mt-12 text-center">
-            <Button 
-              variant="outline" 
-              size="lg"
-              className="border-2 border-purple-600 text-purple-600 hover:bg-purple-600 hover:text-white transition-all duration-300"
-            >
-              View Full Gallery
-            </Button>
-          </div>
-        </div>
-      </section>
 
       {/* Customer Reviews Section */}
       <section className="bg-white py-20">
@@ -906,156 +777,153 @@ export default function HomePage() {
             </p>
           </div>
 
-          {/* Reviews Grid */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-            {/* Review 1 */}
-            <div className="bg-gray-50 rounded-2xl p-8 hover:shadow-lg transition-all duration-300 transform hover:-translate-y-1">
-              <div className="flex items-center mb-6">
-                <div className="w-12 h-12 bg-gradient-to-r from-blue-500 to-purple-600 rounded-full flex items-center justify-center mr-4">
-                  <span className="text-white font-bold text-lg">S</span>
+          {/* Reviews Horizontal Scroll */}
+          <div className="overflow-x-auto pb-4">
+            <div className="flex space-x-6 min-w-max">
+              {/* Review 1 */}
+              <div className="bg-gray-50 rounded-xl p-6 hover:shadow-md transition-all duration-300 transform hover:-translate-y-1 min-w-[300px] max-w-[350px]">
+                <div className="flex items-center mb-4">
+                  <div className="w-10 h-10 bg-gradient-to-r from-blue-500 to-purple-600 rounded-full flex items-center justify-center mr-3">
+                    <span className="text-white font-bold text-sm">S</span>
+                  </div>
+                  <div>
+                    <h4 className="font-semibold text-gray-900 text-sm">Sarah Johnson</h4>
+                    <p className="text-xs text-gray-600">Business Executive</p>
+                  </div>
                 </div>
-                <div>
-                  <h4 className="font-semibold text-gray-900">Sarah Johnson</h4>
-                  <p className="text-sm text-gray-600">Business Executive</p>
+                <div className="flex items-center mb-3">
+                  {[...Array(5)].map((_, i) => (
+                    <svg key={i} className="w-4 h-4 text-yellow-400" fill="currentColor" viewBox="0 0 24 24">
+                      <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
+                    </svg>
+                  ))}
                 </div>
+                <p className="text-gray-700 text-sm leading-relaxed">
+                  "Absolutely breathtaking! The service was impeccable and the rooms were beyond luxurious. 
+                  Every detail was perfect - from the personalized welcome to the world-class amenities."
+                </p>
               </div>
-              <div className="flex items-center mb-4">
-                {[...Array(5)].map((_, i) => (
-                  <svg key={i} className="w-5 h-5 text-yellow-400" fill="currentColor" viewBox="0 0 24 24">
-                    <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
-                  </svg>
-                ))}
-              </div>
-              <p className="text-gray-700 leading-relaxed">
-                "Absolutely breathtaking! The service was impeccable and the rooms were beyond luxurious. 
-                Every detail was perfect - from the personalized welcome to the world-class amenities. 
-                This is truly a seven-star experience."
-              </p>
-            </div>
 
-            {/* Review 2 */}
-            <div className="bg-gray-50 rounded-2xl p-8 hover:shadow-lg transition-all duration-300 transform hover:-translate-y-1">
-              <div className="flex items-center mb-6">
-                <div className="w-12 h-12 bg-gradient-to-r from-green-500 to-blue-600 rounded-full flex items-center justify-center mr-4">
-                  <span className="text-white font-bold text-lg">M</span>
+              {/* Review 2 */}
+              <div className="bg-gray-50 rounded-xl p-6 hover:shadow-md transition-all duration-300 transform hover:-translate-y-1 min-w-[300px] max-w-[350px]">
+                <div className="flex items-center mb-4">
+                  <div className="w-10 h-10 bg-gradient-to-r from-green-500 to-blue-600 rounded-full flex items-center justify-center mr-3">
+                    <span className="text-white font-bold text-sm">M</span>
+                  </div>
+                  <div>
+                    <h4 className="font-semibold text-gray-900 text-sm">Michael Chen</h4>
+                    <p className="text-xs text-gray-600">Tech Entrepreneur</p>
+                  </div>
                 </div>
-                <div>
-                  <h4 className="font-semibold text-gray-900">Michael Chen</h4>
-                  <p className="text-sm text-gray-600">Tech Entrepreneur</p>
+                <div className="flex items-center mb-3">
+                  {[...Array(5)].map((_, i) => (
+                    <svg key={i} className="w-4 h-4 text-yellow-400" fill="currentColor" viewBox="0 0 24 24">
+                      <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
+                    </svg>
+                  ))}
                 </div>
+                <p className="text-gray-700 text-sm leading-relaxed">
+                  "The attention to detail here is unmatched. The staff anticipated our every need before we even asked. 
+                  The spa treatments were rejuvenating and the dining experience was Michelin-star quality."
+                </p>
               </div>
-              <div className="flex items-center mb-4">
-                {[...Array(5)].map((_, i) => (
-                  <svg key={i} className="w-5 h-5 text-yellow-400" fill="currentColor" viewBox="0 0 24 24">
-                    <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
-                  </svg>
-                ))}
-              </div>
-              <p className="text-gray-700 leading-relaxed">
-                "The attention to detail here is unmatched. The staff anticipated our every need before we even asked. 
-                The spa treatments were rejuvenating and the dining experience was Michelin-star quality. 
-                Worth every penny for the luxury experience."
-              </p>
-            </div>
 
-            {/* Review 3 */}
-            <div className="bg-gray-50 rounded-2xl p-8 hover:shadow-lg transition-all duration-300 transform hover:-translate-y-1">
-              <div className="flex items-center mb-6">
-                <div className="w-12 h-12 bg-gradient-to-r from-purple-500 to-pink-600 rounded-full flex items-center justify-center mr-4">
-                  <span className="text-white font-bold text-lg">E</span>
+              {/* Review 3 */}
+              <div className="bg-gray-50 rounded-xl p-6 hover:shadow-md transition-all duration-300 transform hover:-translate-y-1 min-w-[300px] max-w-[350px]">
+                <div className="flex items-center mb-4">
+                  <div className="w-10 h-10 bg-gradient-to-r from-purple-500 to-pink-600 rounded-full flex items-center justify-center mr-3">
+                    <span className="text-white font-bold text-sm">E</span>
+                  </div>
+                  <div>
+                    <h4 className="font-semibold text-gray-900 text-sm">Emma Rodriguez</h4>
+                    <p className="text-xs text-gray-600">Travel Influencer</p>
+                  </div>
                 </div>
-                <div>
-                  <h4 className="font-semibold text-gray-900">Emma Rodriguez</h4>
-                  <p className="text-sm text-gray-600">Travel Influencer</p>
+                <div className="flex items-center mb-3">
+                  {[...Array(5)].map((_, i) => (
+                    <svg key={i} className="w-4 h-4 text-yellow-400" fill="currentColor" viewBox="0 0 24 24">
+                      <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
+                    </svg>
+                  ))}
                 </div>
+                <p className="text-gray-700 text-sm leading-relaxed">
+                  "I've stayed at luxury hotels worldwide, but El Cae Deara stands in a league of its own. 
+                  The private beach access, infinity pools, and personalized butler service created an 
+                  unforgettable experience."
+                </p>
               </div>
-              <div className="flex items-center mb-4">
-                {[...Array(5)].map((_, i) => (
-                  <svg key={i} className="w-5 h-5 text-yellow-400" fill="currentColor" viewBox="0 0 24 24">
-                    <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
-                  </svg>
-                ))}
-              </div>
-              <p className="text-gray-700 leading-relaxed">
-                "I've stayed at luxury hotels worldwide, but El Cae Deara stands in a league of its own. 
-                The private beach access, infinity pools, and personalized butler service created an 
-                unforgettable experience. This is what true luxury feels like."
-              </p>
-            </div>
 
-            {/* Review 4 */}
-            <div className="bg-gray-50 rounded-2xl p-8 hover:shadow-lg transition-all duration-300 transform hover:-translate-y-1">
-              <div className="flex items-center mb-6">
-                <div className="w-12 h-12 bg-gradient-to-r from-orange-500 to-red-600 rounded-full flex items-center justify-center mr-4">
-                  <span className="text-white font-bold text-lg">D</span>
+              {/* Review 4 */}
+              <div className="bg-gray-50 rounded-xl p-6 hover:shadow-md transition-all duration-300 transform hover:-translate-y-1 min-w-[300px] max-w-[350px]">
+                <div className="flex items-center mb-4">
+                  <div className="w-10 h-10 bg-gradient-to-r from-orange-500 to-red-600 rounded-full flex items-center justify-center mr-3">
+                    <span className="text-white font-bold text-sm">D</span>
+                  </div>
+                  <div>
+                    <h4 className="font-semibold text-gray-900 text-sm">David Thompson</h4>
+                    <p className="text-xs text-gray-600">Investment Banker</p>
+                  </div>
                 </div>
-                <div>
-                  <h4 className="font-semibold text-gray-900">David Thompson</h4>
-                  <p className="text-sm text-gray-600">Investment Banker</p>
+                <div className="flex items-center mb-3">
+                  {[...Array(5)].map((_, i) => (
+                    <svg key={i} className="w-4 h-4 text-yellow-400" fill="currentColor" viewBox="0 0 24 24">
+                      <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
+                    </svg>
+                  ))}
                 </div>
+                <p className="text-gray-700 text-sm leading-relaxed">
+                  "Perfect for our anniversary celebration. The staff went above and beyond to make our stay special. 
+                  The room was immaculate, the food was exceptional, and the spa treatments were world-class."
+                </p>
               </div>
-              <div className="flex items-center mb-4">
-                {[...Array(5)].map((_, i) => (
-                  <svg key={i} className="w-5 h-5 text-yellow-400" fill="currentColor" viewBox="0 0 24 24">
-                    <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
-                  </svg>
-                ))}
-              </div>
-              <p className="text-gray-700 leading-relaxed">
-                "Perfect for our anniversary celebration. The staff went above and beyond to make our stay special. 
-                The room was immaculate, the food was exceptional, and the spa treatments were world-class. 
-                We'll definitely be returning."
-              </p>
-            </div>
 
-            {/* Review 5 */}
-            <div className="bg-gray-50 rounded-2xl p-8 hover:shadow-lg transition-all duration-300 transform hover:-translate-y-1">
-              <div className="flex items-center mb-6">
-                <div className="w-12 h-12 bg-gradient-to-r from-teal-500 to-blue-600 rounded-full flex items-center justify-center mr-4">
-                  <span className="text-white font-bold text-lg">L</span>
+              {/* Review 5 */}
+              <div className="bg-gray-50 rounded-xl p-6 hover:shadow-md transition-all duration-300 transform hover:-translate-y-1 min-w-[300px] max-w-[350px]">
+                <div className="flex items-center mb-4">
+                  <div className="w-10 h-10 bg-gradient-to-r from-teal-500 to-blue-600 rounded-full flex items-center justify-center mr-3">
+                    <span className="text-white font-bold text-sm">L</span>
+                  </div>
+                  <div>
+                    <h4 className="font-semibold text-gray-900 text-sm">Lisa Wang</h4>
+                    <p className="text-xs text-gray-600">Fashion Designer</p>
+                  </div>
                 </div>
-                <div>
-                  <h4 className="font-semibold text-gray-900">Lisa Wang</h4>
-                  <p className="text-sm text-gray-600">Fashion Designer</p>
+                <div className="flex items-center mb-3">
+                  {[...Array(5)].map((_, i) => (
+                    <svg key={i} className="w-4 h-4 text-yellow-400" fill="currentColor" viewBox="0 0 24 24">
+                      <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
+                    </svg>
+                  ))}
                 </div>
+                <p className="text-gray-700 text-sm leading-relaxed">
+                  "The design aesthetic is absolutely stunning. Every corner is Instagram-worthy! 
+                  The attention to detail in the interior design matches the exceptional service."
+                </p>
               </div>
-              <div className="flex items-center mb-4">
-                {[...Array(5)].map((_, i) => (
-                  <svg key={i} className="w-5 h-5 text-yellow-400" fill="currentColor" viewBox="0 0 24 24">
-                    <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
-                  </svg>
-                ))}
-              </div>
-              <p className="text-gray-700 leading-relaxed">
-                "The design aesthetic is absolutely stunning. Every corner is Instagram-worthy! 
-                The attention to detail in the interior design matches the exceptional service. 
-                This hotel sets the standard for luxury hospitality."
-              </p>
-            </div>
 
-            {/* Review 6 */}
-            <div className="bg-gray-50 rounded-2xl p-8 hover:shadow-lg transition-all duration-300 transform hover:-translate-y-1">
-              <div className="flex items-center mb-6">
-                <div className="w-12 h-12 bg-gradient-to-r from-indigo-500 to-purple-600 rounded-full flex items-center justify-center mr-4">
-                  <span className="text-white font-bold text-lg">R</span>
+              {/* Review 6 */}
+              <div className="bg-gray-50 rounded-xl p-6 hover:shadow-md transition-all duration-300 transform hover:-translate-y-1 min-w-[300px] max-w-[350px]">
+                <div className="flex items-center mb-4">
+                  <div className="w-10 h-10 bg-gradient-to-r from-indigo-500 to-purple-600 rounded-full flex items-center justify-center mr-3">
+                    <span className="text-white font-bold text-sm">R</span>
+                  </div>
+                  <div>
+                    <h4 className="font-semibold text-gray-900 text-sm">Robert Anderson</h4>
+                    <p className="text-xs text-gray-600">Film Director</p>
+                  </div>
                 </div>
-                <div>
-                  <h4 className="font-semibold text-gray-900">Robert Anderson</h4>
-                  <p className="text-sm text-gray-600">Film Director</p>
+                <div className="flex items-center mb-3">
+                  {[...Array(5)].map((_, i) => (
+                    <svg key={i} className="w-4 h-4 text-yellow-400" fill="currentColor" viewBox="0 0 24 24">
+                      <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
+                    </svg>
+                  ))}
                 </div>
+                <p className="text-gray-700 text-sm leading-relaxed">
+                  "As someone who travels extensively for work, I can say this is the finest hotel I've ever experienced. 
+                  The level of service is unmatched, and the facilities are world-class."
+                </p>
               </div>
-              <div className="flex items-center mb-4">
-                {[...Array(5)].map((_, i) => (
-                  <svg key={i} className="w-5 h-5 text-yellow-400" fill="currentColor" viewBox="0 0 24 24">
-                    <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
-                  </svg>
-                ))}
-              </div>
-              <p className="text-gray-700 leading-relaxed">
-                "As someone who travels extensively for work, I can say this is the finest hotel I've ever experienced. 
-                The level of service is unmatched, and the facilities are world-class. 
-                El Cae Deara redefines what luxury means."
-              </p>
             </div>
           </div>
 
