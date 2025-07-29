@@ -12,6 +12,7 @@ import { Badge } from "@/components/ui/badge"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { User, Upload, Calendar, Mail, Phone, MapPin, Edit } from "lucide-react"
 import { useRouter } from "next/navigation"
+import { toast } from "sonner"
 
 interface CustomerData {
   name: string
@@ -88,18 +89,18 @@ export default function CustomerProfile() {
   const handleUpdateProfile = async () => {
     // Validation
     if (!editData.name || !editData.email) {
-      alert("Name and email are required")
+      toast.error("Name and email are required")
       return
     }
 
     if (editData.number && !/^\d{10}$/.test(editData.number)) {
-      alert("Phone number must be 10 digits")
+      toast.error("Phone number must be 10 digits")
       return
     }
 
     const emailRegex = /^[A-Za-z0-9+_.-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,6}$/
     if (!emailRegex.test(editData.email)) {
-      alert("Invalid email format")
+      toast.error("Invalid email format")
       return
     }
 
@@ -109,7 +110,7 @@ export default function CustomerProfile() {
     setCustomerData(editData)
     localStorage.setItem("customerData", JSON.stringify(editData))
     setIsEditing(false)
-    alert("Profile updated successfully!")
+    toast.success("Profile updated successfully!")
   }
 
   const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {

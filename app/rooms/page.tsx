@@ -14,6 +14,7 @@ import { CalendarIcon, Users, Filter, X, ChevronLeft, ChevronRight } from "lucid
 import { format } from "date-fns"
 import Image from "next/image"
 import Link from "next/link"
+import { toast } from "sonner"
 
 interface Room {
   id: number
@@ -172,7 +173,7 @@ export default function RoomsPage() {
 
   const handleBooking = async (room: Room) => {
     if (!checkInDate || !checkOutDate || !bookingData.customerName || !bookingData.customerEmail) {
-      alert("Please fill all required fields")
+      toast.error("Please fill all required fields")
       return
     }
 
@@ -190,7 +191,7 @@ export default function RoomsPage() {
 
     // Here you would make API call to create booking
     console.log("Booking data:", booking)
-    alert(`Booking confirmed! Total: $${totalPrice}`)
+    toast.success(`Booking confirmed! Total: $${totalPrice}`)
     setSelectedRoom(null)
     setBookingData({ customerName: "", customerEmail: "", phone: "" })
   }

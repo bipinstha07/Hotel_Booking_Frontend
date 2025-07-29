@@ -15,6 +15,7 @@ import { CalendarIcon, Users, Coffee, Star, MapPin } from "lucide-react"
 import { format } from "date-fns"
 import Image from "next/image"
 import Link from "next/link"
+import { toast } from "sonner"
 
 interface Room {
   id: number
@@ -234,7 +235,7 @@ export default function HomePage() {
 
   const handleBooking = async (room: Room) => {
     if (!checkInDate || !checkOutDate || !bookingData.customerName || !bookingData.customerEmail) {
-      alert("Please fill all required fields")
+      toast.error("Please fill all required fields")
       return
     }
 
@@ -263,16 +264,16 @@ export default function HomePage() {
       })
       
       if (response.ok) {
-        alert(`Booking confirmed! Total:  $${totalPrice}`)
+        toast.success(`Booking confirmed! Total: $${totalPrice}`)
         setSelectedRoom(null)
         setBookingData({ customerName: "", customerEmail: "", phone: "", notes: "" })
       } else {
         const errorData = await response.json()
-        alert(`Booking failed: ${errorData.message || 'Unknown error'}`)
+        toast.error(`Booking failed: ${errorData.message || 'Unknown error'}`)
       }
     } catch (error) {
       console.error('Error creating booking:', error)
-      alert('Failed to create booking. Please try again.')
+      toast.error('Failed to create booking. Please try again.')
     }
   }
 
