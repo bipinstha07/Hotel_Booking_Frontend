@@ -21,6 +21,7 @@ import { Toaster } from "@/components/ui/toaster"
 
 interface Room {
   id: string | number
+  roomNumber: string
   roomType: string
   pricePerNight: number
   capacity: number
@@ -83,6 +84,7 @@ export default function AdminDashboard() {
   const [editingRoom, setEditingRoom] = useState<Room | null>(null)
   const [editingRoomNewImages, setEditingRoomNewImages] = useState<File[]>([])
   const [newRoom, setNewRoom] = useState({
+    roomNumber: "",
     roomType: "",
     pricePerNight: "",
     capacity: "",
@@ -268,6 +270,7 @@ export default function AdminDashboard() {
         
         return {
           id: room.id,
+          roomNumber: room.roomNumber || '',
           roomType: room.roomType,
           pricePerNight: room.pricePerNight,
           capacity: room.capacity,
@@ -331,10 +334,10 @@ export default function AdminDashboard() {
   }, [router, mounted])
 
   const handleCreateRoom = async () => {
-    if (!newRoom.roomType || !newRoom.pricePerNight || !newRoom.capacity || newRoom.images.length === 0) {
+    if (!newRoom.roomNumber || !newRoom.roomType || !newRoom.pricePerNight || !newRoom.capacity || newRoom.images.length === 0) {
       toast({
         title: "Validation Error",
-        description: "Please fill all required fields and add at least one image",
+        description: "Please fill all required fields (Room Number, Room Type, Price, Capacity) and add at least one image",
         variant: "destructive",
         duration: 5000,
         className: "text-sm",
@@ -379,6 +382,7 @@ export default function AdminDashboard() {
 
       // Create room data object
       const roomData = {
+        roomNumber: newRoom.roomNumber,
         roomType: newRoom.roomType,
         pricePerNight: Number.parseInt(newRoom.pricePerNight),
         capacity: Number.parseInt(newRoom.capacity),
@@ -423,6 +427,7 @@ export default function AdminDashboard() {
         
         // Reset form
         setNewRoom({
+          roomNumber: "",
           roomType: "",
           pricePerNight: "",
           capacity: "",
@@ -444,6 +449,7 @@ export default function AdminDashboard() {
         // Handle other success statuses (200, etc.)
         await fetchRooms()
         setNewRoom({
+          roomNumber: "",
           roomType: "",
           pricePerNight: "",
           capacity: "",
@@ -494,6 +500,7 @@ export default function AdminDashboard() {
 
       // Create room data object
       const roomData = {
+        roomNumber: editingRoom.roomNumber,
         roomType: editingRoom.roomType,
         pricePerNight: editingRoom.pricePerNight,
         capacity: editingRoom.capacity,
@@ -1145,6 +1152,16 @@ export default function AdminDashboard() {
                       <DialogTitle>Create New Room</DialogTitle>
                     </DialogHeader>
                     <div className="space-y-4">
+                      <div>
+                        <Label htmlFor="roomNumber">Room Number *</Label>
+                        <Input
+                          id="roomNumber"
+                          type="text"
+                          value={newRoom.roomNumber}
+                          onChange={(e) => setNewRoom({ ...newRoom, roomNumber: e.target.value })}
+                          placeholder="Enter room number (e.g., 101, A1, etc.)"
+                        />
+                      </div>
                       <div className="grid grid-cols-2 gap-4">
                         <div>
                           <Label htmlFor="roomType">Room Type *</Label>
@@ -1259,7 +1276,10 @@ export default function AdminDashboard() {
                     </div>
                     <CardHeader>
                       <CardTitle className="flex justify-between items-center">
-                        <span>{roomTypeLabels[room.roomType as keyof typeof roomTypeLabels]}</span>
+                        <div>
+                          <span className="block font-semibold">{roomTypeLabels[room.roomType as keyof typeof roomTypeLabels]}</span>
+                          <span className="text-sm text-gray-500">Room #{room.roomNumber}</span>
+                        </div>
                         <span className="text-blue-600">${room.pricePerNight}/night</span>
                       </CardTitle>
                     </CardHeader>
@@ -1452,6 +1472,16 @@ export default function AdminDashboard() {
                 <DialogTitle>Edit Room</DialogTitle>
               </DialogHeader>
               <div className="space-y-4">
+                <div>
+                  <Label htmlFor="editRoomNumber">Room Number</Label>
+                  <Input
+                    id="editRoomNumber"
+                    type="text"
+                    value={editingRoom.roomNumber}
+                    onChange={(e) => setEditingRoom({ ...editingRoom, roomNumber: e.target.value })}
+                    placeholder="Enter room number"
+                  />
+                </div>
                 <div className="grid grid-cols-2 gap-4">
                   <div>
                     <Label htmlFor="editRoomType">Room Type</Label>

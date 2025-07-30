@@ -46,7 +46,7 @@ export default function HomePage() {
   const [checkInDate, setCheckInDate] = useState<Date>()
   const [checkOutDate, setCheckOutDate] = useState<Date>()
   const [guests, setGuests] = useState(1)
-  const [bookingGuests, setBookingGuests] = useState(1)
+  const [bookingGuests, setBookingGuests] = useState("1")
   const [selectedRoom, setSelectedRoom] = useState<Room | null>(null)
   const [selectedRoomType, setSelectedRoomType] = useState("all")
   const [priceRange, setPriceRange] = useState({ min: "", max: "" })
@@ -56,6 +56,8 @@ export default function HomePage() {
     phone: "",
     notes: "",
   })
+  const [guestError, setGuestError] = useState("")
+  const [isBookingDialogOpen, setIsBookingDialogOpen] = useState(false)
   const [currentImageIndex, setCurrentImageIndex] = useState(0)
 
   // Background images for hero slider
@@ -63,7 +65,13 @@ export default function HomePage() {
     "/heroImages/image1.jpg",
     "/heroImages/image2.jpg", 
     "/heroImages/image3.jpg",
-    "/heroImages/image4.jpg"
+    "/heroImages/image4.jpg",
+    "/heroImages/image5.jpg",
+    "/heroImages/image6.jpg",
+    "/heroImages/image7.jpg",
+    "/heroImages/image8.jpg",
+    "/heroImages/image9.jpg",
+    "/heroImages/image10.jpg"
   ]
 
   // Room Image Slider Component
@@ -239,6 +247,12 @@ export default function HomePage() {
       return
     }
 
+    const guestCount = Number.parseInt(bookingGuests)
+    if (isNaN(guestCount) || guestCount < 1 || guestCount > room.capacity) {
+      toast.error("Please enter a valid number of guests (1 to " + room.capacity + ")")
+      return
+    }
+
     const days = Math.ceil((checkOutDate.getTime() - checkInDate.getTime()) / (1000 * 60 * 60 * 24))
     const totalPrice = days * room.pricePerNight
 
@@ -248,7 +262,7 @@ export default function HomePage() {
       phoneNumber: bookingData.phone,
       checkInDate: format(checkInDate, "yyyy-MM-dd"),
       checkOutDate: format(checkOutDate, "yyyy-MM-dd"),
-      numberOfGuest: bookingGuests,
+      numberOfGuest: guestCount,
       totalPrice,
       notes: bookingData.notes,
       roomId: room.id.toString(),
@@ -267,6 +281,11 @@ export default function HomePage() {
         toast.success(`Booking confirmed! Total: $${totalPrice}`)
         setSelectedRoom(null)
         setBookingData({ customerName: "", customerEmail: "", phone: "", notes: "" })
+        setGuestError("")
+        setBookingGuests("1")
+        setCheckInDate(undefined)
+        setCheckOutDate(undefined)
+        setIsBookingDialogOpen(false)
       } else {
         const errorData = await response.json()
         toast.error(`Booking failed: ${errorData.message || 'Unknown error'}`)
@@ -480,15 +499,20 @@ export default function HomePage() {
                   ))}
                 </div>
                 <div className="mt-auto">
-                  <Dialog>
+                  <Dialog open={isBookingDialogOpen} onOpenChange={setIsBookingDialogOpen}>
                     <DialogTrigger asChild>
-                      <Button className="w-full" onClick={() => setSelectedRoom(room)}>
+                      <Button className="w-full" onClick={() => {
+                        setSelectedRoom(room)
+                        setBookingGuests("1")
+                        setGuestError("")
+                        setIsBookingDialogOpen(true)
+                      }}>
                         Book Now
                       </Button>
                     </DialogTrigger>
                   <DialogContent className="max-w-md">
                     <DialogHeader>
-                      <DialogTitle>Book {roomTypes[room.roomType as keyof typeof roomTypes]}</DialogTitle>
+                      <DialogTitle>Book {selectedRoom ? roomTypes[selectedRoom.roomType as keyof typeof roomTypes] : ''}</DialogTitle>
                     </DialogHeader>
                     <div className="space-y-4">
                       <div>
@@ -559,11 +583,36 @@ export default function HomePage() {
                           id="booking-guests"
                           type="number"
                           min="1"
-                          max={room.capacity}
+                          max={selectedRoom?.capacity || 1}
                           value={bookingGuests}
-                          onChange={(e) => setBookingGuests(Number.parseInt(e.target.value))}
-                          placeholder={`Max ${room.capacity} guests`}
+                          onChange={(e) => {
+                            const value = e.target.value
+                            const numValue = Number.parseInt(value)
+                            
+                            if (value === "") {
+                              setGuestError("Number of guests cannot be empty")
+                              setBookingGuests("")
+                            } else if (numValue === 0) {
+                              setGuestError("Number of guests cannot be zero")
+                              setBookingGuests("0")
+                            } else if (numValue > (selectedRoom?.capacity || 1)) {
+                              console.log(`Guest validation: ${numValue} > ${selectedRoom?.capacity} (room capacity)`)
+                              setGuestError(`Maximum ${selectedRoom?.capacity} guests allowed for this room`)
+                              setBookingGuests(value)
+                            } else if (numValue < 1) {
+                              setGuestError("Number of guests must be at least 1")
+                              setBookingGuests(value)
+                            } else {
+                              setGuestError("")
+                              setBookingGuests(value)
+                            }
+                          }}
+                          placeholder="Enter number of guests"
+                          className={guestError ? "border-red-500" : ""}
                         />
+                        {guestError && (
+                          <p className="text-red-500 text-sm mt-1">{guestError}</p>
+                        )}
                       </div>
                       
                       {/* Notes */}
@@ -605,8 +654,15 @@ export default function HomePage() {
                       )}
                       <Button
                         className="w-full"
-                        onClick={() => handleBooking(room)}
-                        disabled={!checkInDate || !checkOutDate || !bookingData.customerName || !bookingData.customerEmail}
+                        onClick={() => selectedRoom && handleBooking(selectedRoom)}
+                        disabled={(() => {
+                          const guestCount = Number.parseInt(bookingGuests)
+                          const isDisabled = !checkInDate || !checkOutDate || !bookingData.customerName || !bookingData.customerEmail || guestCount < 1 || guestCount > (selectedRoom?.capacity || 1) || isNaN(guestCount)
+                          if (guestCount > (selectedRoom?.capacity || 1)) {
+                            console.log(`Button disabled: ${guestCount} > ${selectedRoom?.capacity} (room capacity)`)
+                          }
+                          return isDisabled
+                        })()}
                       >
                         Confirm Booking
                       </Button>
