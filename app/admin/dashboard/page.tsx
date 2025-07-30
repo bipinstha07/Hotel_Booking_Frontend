@@ -81,6 +81,7 @@ export default function AdminDashboard() {
   const [rooms, setRooms] = useState<Room[]>([])
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false)
   const [editingRoom, setEditingRoom] = useState<Room | null>(null)
+  const [editingRoomNewImages, setEditingRoomNewImages] = useState<File[]>([])
   const [newRoom, setNewRoom] = useState({
     roomType: "",
     pricePerNight: "",
@@ -297,13 +298,8 @@ export default function AdminDashboard() {
 
   const handleEditImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(e.target.files || [])
-    if (files.length > 0 && editingRoom) {
-      // Convert files to URLs for display (in real app, upload to server)
-      const newImageUrls = files.map((file) => URL.createObjectURL(file))
-      setEditingRoom({
-        ...editingRoom,
-        images: [...editingRoom.images, ...newImageUrls],
-      })
+    if (files.length > 0) {
+      setEditingRoomNewImages(prev => [...prev, ...files])
     }
   }
 
@@ -312,6 +308,10 @@ export default function AdminDashboard() {
       const updatedImages = editingRoom.images.filter((_, i) => i !== index)
       setEditingRoom({ ...editingRoom, images: updatedImages })
     }
+  }
+
+  const removeEditNewImage = (index: number) => {
+    setEditingRoomNewImages(prev => prev.filter((_, i) => i !== index))
   }
 
   useEffect(() => {
@@ -477,18 +477,78 @@ export default function AdminDashboard() {
   const handleUpdateRoom = async () => {
     if (!editingRoom) return
 
-    // Here you would make API call to update room
-    console.log("Updating room:", editingRoom)
+    try {
+      // Get admin token for authentication
+      const adminToken = localStorage.getItem("adminToken")
+      if (!adminToken) {
+        toast({
+          title: "Authentication Required",
+          description: "Please log in as admin to update rooms",
+          variant: "destructive",
+          duration: 5000,
+          className: "text-sm",
+        })
+        router.push("/admin/login")
+        return
+      }
 
-    setRooms(rooms.map((room) => (room.id === editingRoom.id ? editingRoom : room)))
-    setEditingRoom(null)
-    toast({
-      title: "Room Updated!",
-      description: "Room has been updated successfully",
-      variant: "default",
-      duration: 5000,
-      className: "text-sm",
-    })
+      // Create room data object
+      const roomData = {
+        roomType: editingRoom.roomType,
+        pricePerNight: editingRoom.pricePerNight,
+        capacity: editingRoom.capacity,
+        description: editingRoom.description || '',
+        amenities: Array.isArray(editingRoom.amenities) ? editingRoom.amenities.join(',') : editingRoom.amenities || ''
+      }
+
+      // Create FormData for multipart upload
+      const formData = new FormData()
+      formData.append('roomData', JSON.stringify(roomData))
+      
+      // Append new images to FormData if any
+      editingRoomNewImages.forEach((image, index) => {
+        formData.append('image', image)
+      })
+      
+      // Make API call to update room
+      const response = await fetch(`http://localhost:8080/admin/room/update/${editingRoom.id}`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${adminToken}`,
+        },
+        body: formData
+      })
+
+      if (!response.ok) {
+        const errorData = await response.json()
+        throw new Error(errorData.message || 'Failed to update room')
+      }
+
+      const updatedRoom = await response.json()
+      console.log("Room updated successfully:", updatedRoom)
+
+      // Refresh the rooms list to get the updated data from the server
+      await fetchRooms()
+      
+      setEditingRoom(null)
+      setEditingRoomNewImages([])
+      toast({
+        title: "Room Updated Successfully!",
+        description: "Room has been updated in the system",
+        variant: "default",
+        duration: 5000,
+        className: "bg-green-500 border-green-200 text-white text-sm",
+      })
+    } catch (error) {
+      console.error("Error updating room:", error)
+      toast({
+        title: "Update Failed",
+        description: `Failed to update room: ${error instanceof Error ? error.message : 'Unknown error'}`,
+        variant: "destructive",
+        duration: 5000,
+        className: "text-sm",
+      })
+    }
   }
 
   const handleDeleteRoom = (roomId: string | number, roomType?: string) => {
@@ -618,13 +678,13 @@ export default function AdminDashboard() {
       // Call the backend API to update booking status
       console.log('Making API call to update booking status:', {
         bookingId,
-        bookingStatus: "CONFIRMED",
+        bookingStatus: "APPROVED",
         adminToken: adminToken ? 'Present' : 'Missing'
       })
 
       let response
       try {
-        response = await fetch(`http://localhost:8080/admin/room/booking/update/${bookingId}?bookingStatus=CONFIRMED`, {
+                  response = await fetch(`http://localhost:8080/admin/room/booking/update/${bookingId}?bookingStatus=APPROVED`, {
           method: 'PATCH',
           headers: {
             'Authorization': `Bearer ${adminToken}`,
@@ -651,7 +711,7 @@ export default function AdminDashboard() {
 
       // Update local state after successful API call
       const updatedBookings = bookings.map((booking) =>
-        booking.id === bookingId ? { ...booking, bookingStatus: "CONFIRMED" } : booking,
+        booking.id === bookingId ? { ...booking, bookingStatus: "APPROVED" } : booking,
       )
       setBookings(updatedBookings)
       
@@ -833,7 +893,6 @@ export default function AdminDashboard() {
     switch (status?.toUpperCase()) {
       case "PENDING":
         return "bg-yellow-100 text-yellow-800 border-yellow-200"
-      case "CONFIRMED":
       case "APPROVED":
         return "bg-green-100 text-green-800 border-green-200"
       case "CANCELLED":
@@ -922,7 +981,7 @@ export default function AdminDashboard() {
             </Button>
           </div>
         )
-      case "CONFIRMED":
+      case "APPROVED":
         return (
           <div className="flex gap-2">
             <Button
@@ -1284,9 +1343,9 @@ export default function AdminDashboard() {
                   Pending
                 </Button>
                 <Button
-                  variant={bookingStatusFilter === "CONFIRMED" ? "default" : "outline"}
+                  variant={bookingStatusFilter === "APPROVED" ? "default" : "outline"}
                   size="sm"
-                  onClick={() => setBookingStatusFilter("CONFIRMED")}
+                  onClick={() => setBookingStatusFilter("APPROVED")}
                   className="text-xs bg-green-100 hover:bg-green-200 text-green-800 border-green-200"
                 >
                   Approved
@@ -1382,7 +1441,12 @@ export default function AdminDashboard() {
 
         {/* Edit Room Dialog */}
         {editingRoom && (
-          <Dialog open={!!editingRoom} onOpenChange={() => setEditingRoom(null)}>
+          <Dialog open={!!editingRoom} onOpenChange={(open) => {
+            if (!open) {
+              setEditingRoom(null)
+              setEditingRoomNewImages([])
+            }
+          }}>
             <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
               <DialogHeader>
                 <DialogTitle>Edit Room</DialogTitle>
@@ -1473,6 +1537,35 @@ export default function AdminDashboard() {
                         ))}
                       </div>
                     )}
+                    
+                    {editingRoomNewImages.length > 0 && (
+                      <div className="mt-4">
+                        <Label>New Images to Upload</Label>
+                        <div className="grid grid-cols-3 gap-2 mt-2">
+                          {editingRoomNewImages.map((file, index) => (
+                            <div key={index} className="relative">
+                              <Image
+                                src={URL.createObjectURL(file)}
+                                alt={`New image ${index + 1}`}
+                                width={100}
+                                height={80}
+                                className="object-cover rounded border"
+                              />
+                              <Button
+                                type="button"
+                                variant="destructive"
+                                size="sm"
+                                className="absolute top-1 right-1 h-5 w-5 p-0 text-xs"
+                                onClick={() => removeEditNewImage(index)}
+                              >
+                                ×
+                              </Button>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                    
                     <Input type="file" accept="image/*" multiple onChange={handleEditImageUpload} className="w-full" />
                     <p className="text-sm text-gray-500">Add more images to the room</p>
                   </div>
