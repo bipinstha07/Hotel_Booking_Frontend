@@ -44,6 +44,7 @@ interface Booking {
   notes: string
   numberOfGuest: number
   roomId: string
+  roomNumber?: string
   roomEntity?: {
     id: string
     roomType: string
@@ -1265,7 +1266,7 @@ export default function AdminDashboard() {
               </div>
             </CardHeader>
             <CardContent>
-              <div className="grid grid-cols-1 md:grid-cols-1 lg:grid-cols-2 xl:grid-cols-2 gap-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-3 gap-6">
                 {filteredRooms.map((room) => (
                   <Card key={room.id} className="overflow-hidden h-[600px] flex flex-col">
                     <div className="relative h-64">
@@ -1397,7 +1398,7 @@ export default function AdminDashboard() {
               </div>
             </CardHeader>
             <CardContent>
-              <div className="space-y-4">
+              <div className="space-y-6">
                 {filteredBookings.length === 0 ? (
                   <div className="text-center py-8">
                     <p className="text-gray-500">
@@ -1406,52 +1407,63 @@ export default function AdminDashboard() {
                   </div>
                 ) : (
                   filteredBookings.map((booking) => (
-                    <Card key={booking.id} className="border-l-4 border-l-blue-500">
-                      <CardContent className="p-4">
-                        <div className="flex justify-between items-start mb-4">
+                    <div key={booking.id} className="bg-white border border-gray-200 rounded-lg p-4 hover:shadow-md transition-all duration-200 shadow-sm">
+                      <div className="flex items-center justify-between mb-3">
+                        <div className="flex items-center gap-3">
+                          <div className="w-3 h-3 rounded-full bg-blue-500"></div>
                           <div>
-                            <h3 className="font-semibold text-lg">
-                              {booking.roomEntity?.roomType || `Room ${booking.roomId}`}
-                            </h3>
-                            <p className="text-sm text-gray-600">Booking ID: #{booking.id}</p>
-                            <p className="text-sm text-gray-600">Customer: {booking.customerName}</p>
-                            <p className="text-sm text-gray-600">Email: {booking.customerEmail}</p>
-                            <p className="text-sm text-gray-600">Phone: {booking.phoneNumber}</p>
-                          </div>
-                          <Badge className={getStatusColor(booking.bookingStatus)}>{booking.bookingStatus}</Badge>
-                        </div>
-
-                        <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-4">
-                          <div>
-                            <Label className="text-sm font-medium text-gray-500">Check-in</Label>
-                            <p className="font-medium">{new Date(booking.checkInDate).toLocaleDateString()}</p>
-                          </div>
-                          <div>
-                            <Label className="text-sm font-medium text-gray-500">Check-out</Label>
-                            <p className="font-medium">{new Date(booking.checkOutDate).toLocaleDateString()}</p>
-                          </div>
-                          <div>
-                            <Label className="text-sm font-medium text-gray-500">Total Amount</Label>
-                            <p className="font-medium text-green-600">${booking.totalPrice}</p>
-                          </div>
-                          <div>
-                            <Label className="text-sm font-medium text-gray-500">Booked On</Label>
-                            <p className="font-medium">{new Date(booking.bookingCreated).toLocaleDateString()}</p>
+                            <div className="flex items-center justify-between mb-1">
+                              <h3 className="font-semibold text-lg text-gray-900">
+                                Booking #{booking.id}
+                              </h3>
+                              {booking.roomNumber && (
+                                <span className="text-sm font-medium text-blue-600">Room No. {booking.roomNumber}</span>
+                              )}
+                            </div>
+                            <p className="text-sm text-gray-500">
+                              Room ID: {booking.roomId}
+                              {booking.roomEntity?.roomType && ` • ${booking.roomEntity.roomType}`}
+                            </p>
+                            <p className="text-sm text-gray-500">Customer: {booking.customerName}</p>
                           </div>
                         </div>
+                        <Badge className={`text-xs px-2 py-1 ${getStatusColor(booking.bookingStatus)}`}>
+                          {booking.bookingStatus}
+                        </Badge>
+                      </div>
 
-                        {booking.notes && (
-                          <div className="mb-4">
-                            <Label className="text-sm font-medium text-gray-500">Notes</Label>
-                            <p className="text-sm text-gray-700 bg-gray-50 p-2 rounded">{booking.notes}</p>
-                          </div>
-                        )}
+                      <div className="grid grid-cols-3 gap-4 text-sm">
+                        <div>
+                          <p className="text-gray-500 text-xs uppercase tracking-wide">Check-in</p>
+                          <p className="font-medium">{new Date(booking.checkInDate).toLocaleDateString()}</p>
+                        </div>
+                        <div>
+                          <p className="text-gray-500 text-xs uppercase tracking-wide">Check-out</p>
+                          <p className="font-medium">{new Date(booking.checkOutDate).toLocaleDateString()}</p>
+                        </div>
+                        <div>
+                          <p className="text-gray-500 text-xs uppercase tracking-wide">Amount</p>
+                          <p className="font-medium text-green-600">${booking.totalPrice}</p>
+                        </div>
+                      </div>
 
-                        <div className="flex justify-end items-center">
+                      <div className="flex items-center justify-between mt-3 pt-3 border-t border-gray-100">
+                        <div className="flex items-center gap-4 text-xs text-gray-500">
+                          <span>📧 {booking.customerEmail}</span>
+                          <span>📞 {booking.phoneNumber}</span>
+                          <span>👥 {booking.numberOfGuest} guests</span>
+                        </div>
+                        <div className="flex gap-1">
                           {getStatusActions(booking)}
                         </div>
-                      </CardContent>
-                    </Card>
+                      </div>
+
+                      {booking.notes && (
+                        <div className="mt-3 pt-3 border-t border-gray-100">
+                          <p className="text-xs text-gray-600 italic">"{booking.notes}"</p>
+                        </div>
+                      )}
+                    </div>
                   ))
                 )}
               </div>

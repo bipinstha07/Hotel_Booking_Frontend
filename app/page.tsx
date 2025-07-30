@@ -472,7 +472,7 @@ export default function HomePage() {
             <p className="mt-2 text-gray-600">Loading rooms...</p>
           </div>
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-1 lg:grid-cols-2 xl:grid-cols-2 gap-8">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-3 gap-8">
             {filteredRooms.map((room) => (
             <Card key={room.id} className="overflow-hidden hover:shadow-lg transition-shadow h-[600px] flex flex-col">
               <div className="relative">
@@ -499,176 +499,14 @@ export default function HomePage() {
                   ))}
                 </div>
                 <div className="mt-auto">
-                  <Dialog open={isBookingDialogOpen} onOpenChange={setIsBookingDialogOpen}>
-                    <DialogTrigger asChild>
-                      <Button className="w-full" onClick={() => {
-                        setSelectedRoom(room)
-                        setBookingGuests("1")
-                        setGuestError("")
-                        setIsBookingDialogOpen(true)
-                      }}>
-                        Book Now
-                      </Button>
-                    </DialogTrigger>
-                  <DialogContent className="max-w-md">
-                    <DialogHeader>
-                      <DialogTitle>Book {selectedRoom ? roomTypes[selectedRoom.roomType as keyof typeof roomTypes] : ''}</DialogTitle>
-                    </DialogHeader>
-                    <div className="space-y-4">
-                      <div>
-                        <Label htmlFor="customerName">Full Name *</Label>
-                        <Input
-                          id="customerName"
-                          value={bookingData.customerName}
-                          onChange={(e) => setBookingData({ ...bookingData, customerName: e.target.value })}
-                          placeholder="Enter your full name"
-                        />
-                      </div>
-                      <div>
-                        <Label htmlFor="customerEmail">Email *</Label>
-                        <Input
-                          id="customerEmail"
-                          type="email"
-                          value={bookingData.customerEmail}
-                          onChange={(e) => setBookingData({ ...bookingData, customerEmail: e.target.value })}
-                          placeholder="Enter your email"
-                        />
-                      </div>
-                      <div>
-                        <Label htmlFor="phone">Phone Number</Label>
-                        <Input
-                          id="phone"
-                          value={bookingData.phone}
-                          onChange={(e) => setBookingData({ ...bookingData, phone: e.target.value })}
-                          placeholder="Enter your phone number"
-                        />
-                      </div>
-                      
-                      {/* Check-in and Check-out Dates */}
-                      <div className="grid grid-cols-2 gap-4">
-                        <div>
-                          <Label htmlFor="checkIn">Check-in Date *</Label>
-                          <Popover>
-                            <PopoverTrigger asChild>
-                              <Button variant="outline" className="w-full justify-start text-left font-normal">
-                                <CalendarIcon className="mr-2 h-4 w-4" />
-                                {checkInDate ? format(checkInDate, "PPP") : "Select date"}
-                              </Button>
-                            </PopoverTrigger>
-                            <PopoverContent className="w-auto p-0">
-                              <Calendar mode="single" selected={checkInDate} onSelect={setCheckInDate} initialFocus />
-                            </PopoverContent>
-                          </Popover>
-                        </div>
-                        <div>
-                          <Label htmlFor="checkOut">Check-out Date *</Label>
-                          <Popover>
-                            <PopoverTrigger asChild>
-                              <Button variant="outline" className="w-full justify-start text-left font-normal">
-                                <CalendarIcon className="mr-2 h-4 w-4" />
-                                {checkOutDate ? format(checkOutDate, "PPP") : "Select date"}
-                              </Button>
-                            </PopoverTrigger>
-                            <PopoverContent className="w-auto p-0">
-                              <Calendar mode="single" selected={checkOutDate} onSelect={setCheckOutDate} initialFocus />
-                            </PopoverContent>
-                          </Popover>
-                        </div>
-                      </div>
-                      
-                      {/* Number of Guests */}
-                      <div>
-                        <Label htmlFor="booking-guests">Number of Guests *</Label>
-                        <Input
-                          id="booking-guests"
-                          type="number"
-                          min="1"
-                          max={selectedRoom?.capacity || 1}
-                          value={bookingGuests}
-                          onChange={(e) => {
-                            const value = e.target.value
-                            const numValue = Number.parseInt(value)
-                            
-                            if (value === "") {
-                              setGuestError("Number of guests cannot be empty")
-                              setBookingGuests("")
-                            } else if (numValue === 0) {
-                              setGuestError("Number of guests cannot be zero")
-                              setBookingGuests("0")
-                            } else if (numValue > (selectedRoom?.capacity || 1)) {
-                              console.log(`Guest validation: ${numValue} > ${selectedRoom?.capacity} (room capacity)`)
-                              setGuestError(`Maximum ${selectedRoom?.capacity} guests allowed for this room`)
-                              setBookingGuests(value)
-                            } else if (numValue < 1) {
-                              setGuestError("Number of guests must be at least 1")
-                              setBookingGuests(value)
-                            } else {
-                              setGuestError("")
-                              setBookingGuests(value)
-                            }
-                          }}
-                          placeholder="Enter number of guests"
-                          className={guestError ? "border-red-500" : ""}
-                        />
-                        {guestError && (
-                          <p className="text-red-500 text-sm mt-1">{guestError}</p>
-                        )}
-                      </div>
-                      
-                      {/* Notes */}
-                      <div>
-                        <Label htmlFor="notes">Special Requests (Optional)</Label>
-                        <Textarea
-                          id="notes"
-                          value={bookingData.notes}
-                          onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => setBookingData({ ...bookingData, notes: e.target.value })}
-                          placeholder="Any special requests or notes..."
-                          rows={3}
-                        />
-                      </div>
-                      
-                      {/* Booking Summary */}
-                      {checkInDate && checkOutDate && (
-                        <div className="bg-gray-50 p-4 rounded-lg">
-                          <div className="flex justify-between items-center mb-2">
-                            <span>Check-in:</span>
-                            <span>{format(checkInDate, "PPP")}</span>
-                          </div>
-                          <div className="flex justify-between items-center mb-2">
-                            <span>Check-out:</span>
-                            <span>{format(checkOutDate, "PPP")}</span>
-                          </div>
-                          <div className="flex justify-between items-center mb-2">
-                            <span>Guests:</span>
-                            <span>{bookingGuests} person(s)</span>
-                          </div>
-                          <div className="flex justify-between items-center font-bold">
-                            <span>Total:</span>
-                            <span>
-                              $
-                              {Math.ceil((checkOutDate.getTime() - checkInDate.getTime()) / (1000 * 60 * 60 * 24)) *
-                                room.pricePerNight}
-                            </span>
-                          </div>
-                        </div>
-                      )}
-                      <Button
-                        className="w-full"
-                        onClick={() => selectedRoom && handleBooking(selectedRoom)}
-                        disabled={(() => {
-                          const guestCount = Number.parseInt(bookingGuests)
-                          const isDisabled = !checkInDate || !checkOutDate || !bookingData.customerName || !bookingData.customerEmail || guestCount < 1 || guestCount > (selectedRoom?.capacity || 1) || isNaN(guestCount)
-                          if (guestCount > (selectedRoom?.capacity || 1)) {
-                            console.log(`Button disabled: ${guestCount} > ${selectedRoom?.capacity} (room capacity)`)
-                          }
-                          return isDisabled
-                        })()}
-                      >
-                        Confirm Booking
-                      </Button>
-                    </div>
-                  </DialogContent>
-                </Dialog>
+                  <Button className="w-full" onClick={() => {
+                    setSelectedRoom(room)
+                    setBookingGuests("1")
+                    setGuestError("")
+                    setIsBookingDialogOpen(true)
+                  }}>
+                    Book Now
+                  </Button>
                 </div>
               </CardContent>
             </Card>
@@ -1173,6 +1011,168 @@ export default function HomePage() {
           </div>
         </div>
       </footer>
+
+      {/* Booking Dialog - Moved outside the room cards to prevent scrolling issues */}
+      <Dialog open={isBookingDialogOpen} onOpenChange={setIsBookingDialogOpen}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Book {selectedRoom ? roomTypes[selectedRoom.roomType as keyof typeof roomTypes] : ''}</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div>
+              <Label htmlFor="customerName">Full Name *</Label>
+              <Input
+                id="customerName"
+                value={bookingData.customerName}
+                onChange={(e) => setBookingData({ ...bookingData, customerName: e.target.value })}
+                placeholder="Enter your full name"
+              />
+            </div>
+            <div>
+              <Label htmlFor="customerEmail">Email *</Label>
+              <Input
+                id="customerEmail"
+                type="email"
+                value={bookingData.customerEmail}
+                onChange={(e) => setBookingData({ ...bookingData, customerEmail: e.target.value })}
+                placeholder="Enter your email"
+              />
+            </div>
+            <div>
+              <Label htmlFor="phone">Phone Number</Label>
+              <Input
+                id="phone"
+                value={bookingData.phone}
+                onChange={(e) => setBookingData({ ...bookingData, phone: e.target.value })}
+                placeholder="Enter your phone number"
+              />
+            </div>
+            
+            {/* Check-in and Check-out Dates */}
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <Label htmlFor="checkIn">Check-in Date *</Label>
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <Button variant="outline" className="w-full justify-start text-left font-normal">
+                      <CalendarIcon className="mr-2 h-4 w-4" />
+                      {checkInDate ? format(checkInDate, "PPP") : "Select date"}
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-auto p-0">
+                    <Calendar mode="single" selected={checkInDate} onSelect={setCheckInDate} initialFocus />
+                  </PopoverContent>
+                </Popover>
+              </div>
+              <div>
+                <Label htmlFor="checkOut">Check-out Date *</Label>
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <Button variant="outline" className="w-full justify-start text-left font-normal">
+                      <CalendarIcon className="mr-2 h-4 w-4" />
+                      {checkOutDate ? format(checkOutDate, "PPP") : "Select date"}
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-auto p-0">
+                    <Calendar mode="single" selected={checkOutDate} onSelect={setCheckOutDate} initialFocus />
+                  </PopoverContent>
+                </Popover>
+              </div>
+            </div>
+            
+            {/* Number of Guests */}
+            <div>
+              <Label htmlFor="booking-guests">Number of Guests *</Label>
+              <Input
+                id="booking-guests"
+                type="number"
+                min="1"
+                max={selectedRoom?.capacity || 1}
+                value={bookingGuests}
+                onChange={(e) => {
+                  const value = e.target.value
+                  const numValue = Number.parseInt(value)
+                  
+                  if (value === "") {
+                    setGuestError("Number of guests cannot be empty")
+                    setBookingGuests("")
+                  } else if (numValue === 0) {
+                    setGuestError("Number of guests cannot be zero")
+                    setBookingGuests("0")
+                  } else if (numValue > (selectedRoom?.capacity || 1)) {
+                    console.log(`Guest validation: ${numValue} > ${selectedRoom?.capacity} (room capacity)`)
+                    setGuestError(`Maximum ${selectedRoom?.capacity} guests allowed for this room`)
+                    setBookingGuests(value)
+                  } else if (numValue < 1) {
+                    setGuestError("Number of guests must be at least 1")
+                    setBookingGuests(value)
+                  } else {
+                    setGuestError("")
+                    setBookingGuests(value)
+                  }
+                }}
+                placeholder="Enter number of guests"
+                className={guestError ? "border-red-500" : ""}
+              />
+              {guestError && (
+                <p className="text-red-500 text-sm mt-1">{guestError}</p>
+              )}
+            </div>
+            
+            {/* Notes */}
+            <div>
+              <Label htmlFor="notes">Special Requests (Optional)</Label>
+              <Textarea
+                id="notes"
+                value={bookingData.notes}
+                onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => setBookingData({ ...bookingData, notes: e.target.value })}
+                placeholder="Any special requests or notes..."
+                rows={3}
+              />
+            </div>
+            
+            {/* Booking Summary */}
+            {checkInDate && checkOutDate && selectedRoom && (
+              <div className="bg-gray-50 p-4 rounded-lg">
+                <div className="flex justify-between items-center mb-2">
+                  <span>Check-in:</span>
+                  <span>{format(checkInDate, "PPP")}</span>
+                </div>
+                <div className="flex justify-between items-center mb-2">
+                  <span>Check-out:</span>
+                  <span>{format(checkOutDate, "PPP")}</span>
+                </div>
+                <div className="flex justify-between items-center mb-2">
+                  <span>Guests:</span>
+                  <span>{bookingGuests} person(s)</span>
+                </div>
+                <div className="flex justify-between items-center font-bold">
+                  <span>Total:</span>
+                  <span>
+                    $
+                    {Math.ceil((checkOutDate.getTime() - checkInDate.getTime()) / (1000 * 60 * 60 * 24)) *
+                      selectedRoom.pricePerNight}
+                  </span>
+                </div>
+              </div>
+            )}
+            <Button
+              className="w-full"
+              onClick={() => selectedRoom && handleBooking(selectedRoom)}
+              disabled={(() => {
+                const guestCount = Number.parseInt(bookingGuests)
+                const isDisabled = !checkInDate || !checkOutDate || !bookingData.customerName || !bookingData.customerEmail || guestCount < 1 || guestCount > (selectedRoom?.capacity || 1) || isNaN(guestCount)
+                if (guestCount > (selectedRoom?.capacity || 1)) {
+                  console.log(`Button disabled: ${guestCount} > ${selectedRoom?.capacity} (room capacity)`)
+                }
+                return isDisabled
+              })()}
+            >
+              Confirm Booking
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }
