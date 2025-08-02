@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, memo } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
@@ -39,6 +39,83 @@ const roomTypes = {
   FOUR_SEATER_NORMAL: "Four Seater Normal",
 }
 
+// Room Image Slider Component - memoized to prevent unnecessary re-renders
+const RoomImageSlider = memo(({ images, roomId }: { images: string[], roomId: number }) => {
+  const [currentIndex, setCurrentIndex] = useState(0)
+
+  const nextImage = () => {
+    setCurrentIndex((prev) => (prev + 1) % images.length)
+  }
+
+  const prevImage = () => {
+    setCurrentIndex((prev) => (prev - 1 + images.length) % images.length)
+  }
+
+  if (images.length === 0) {
+    return (
+      <div className="relative h-64 lg:h-80 bg-gray-200 flex items-center justify-center rounded-lg">
+        <p className="text-gray-500">No images available</p>
+      </div>
+    )
+  }
+
+  return (
+    <div className="space-y-4">
+      <div className="relative h-64 lg:h-80">
+        <Image
+          src={images[currentIndex] || "/placeholder.svg"}
+          alt={`Room ${roomId} image ${currentIndex + 1}`}
+          fill
+          className="object-cover rounded-lg"
+          priority={currentIndex === 0}
+        />
+        {images.length > 1 && (
+          <>
+            <Button
+              variant="outline"
+              size="sm"
+              className="absolute left-2 top-1/2 transform -translate-y-1/2 bg-white/80"
+              onClick={prevImage}
+            >
+              <ChevronLeft className="h-4 w-4" />
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              className="absolute right-2 top-1/2 transform -translate-y-1/2 bg-white/80"
+              onClick={nextImage}
+            >
+              <ChevronRight className="h-4 w-4" />
+            </Button>
+          </>
+        )}
+      </div>
+      {images.length > 1 && (
+        <div className="flex gap-2 overflow-x-auto">
+          {images.map((image, index) => (
+            <button
+              key={index}
+              onClick={() => setCurrentIndex(index)}
+              className={`relative w-16 h-16 flex-shrink-0 rounded border-2 ${
+                currentIndex === index ? "border-blue-500" : "border-gray-200"
+              }`}
+            >
+              <Image
+                src={image || "/placeholder.svg"}
+                alt={`Thumbnail ${index + 1}`}
+                fill
+                className="object-cover rounded"
+              />
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
+  )
+})
+
+RoomImageSlider.displayName = 'RoomImageSlider'
+
 export default function RoomsPage() {
   const [rooms, setRooms] = useState<Room[]>([])
   const [filteredRooms, setFilteredRooms] = useState<Room[]>([])
@@ -48,7 +125,6 @@ export default function RoomsPage() {
   const [selectedRoomType, setSelectedRoomType] = useState<string>("SINGLE_AC") // Updated default value
   const [priceRange, setPriceRange] = useState({ min: "", max: "" })
   const [selectedRoom, setSelectedRoom] = useState<Room | null>(null)
-  const [currentImageIndex, setCurrentImageIndex] = useState(0)
   const [bookingData, setBookingData] = useState({
     customerName: "",
     customerEmail: "",
@@ -202,17 +278,7 @@ export default function RoomsPage() {
     setGuests(1)
   }
 
-  const nextImage = () => {
-    if (selectedRoom && selectedRoom.images && selectedRoom.images.length > 1) {
-      setCurrentImageIndex((prev) => (prev === selectedRoom.images.length - 1 ? 0 : prev + 1))
-    }
-  }
 
-  const prevImage = () => {
-    if (selectedRoom && selectedRoom.images && selectedRoom.images.length > 1) {
-      setCurrentImageIndex((prev) => (prev === 0 ? selectedRoom.images.length - 1 : prev - 1))
-    }
-  }
 
   if (loading) {
     return (
@@ -390,7 +456,6 @@ export default function RoomsPage() {
                       className="w-full"
                       onClick={() => {
                         setSelectedRoom(room)
-                        setCurrentImageIndex(0)
                       }}
                     >
                       View Details & Book
@@ -402,56 +467,7 @@ export default function RoomsPage() {
                     </DialogHeader>
                     <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                       {/* Image Gallery */}
-                      <div className="space-y-4">
-                        <div className="relative h-64 lg:h-80">
-                          <Image
-                            src={room.images && room.images.length > currentImageIndex ? room.images[currentImageIndex] : "/placeholder.svg"}
-                            alt={`Room image ${currentImageIndex + 1}`}
-                            fill
-                            className="object-cover rounded-lg"
-                          />
-                          {room.images && room.images.length > 1 && (
-                            <>
-                              <Button
-                                variant="outline"
-                                size="sm"
-                                className="absolute left-2 top-1/2 transform -translate-y-1/2 bg-white/80"
-                                onClick={prevImage}
-                              >
-                                <ChevronLeft className="h-4 w-4" />
-                              </Button>
-                              <Button
-                                variant="outline"
-                                size="sm"
-                                className="absolute right-2 top-1/2 transform -translate-y-1/2 bg-white/80"
-                                onClick={nextImage}
-                              >
-                                <ChevronRight className="h-4 w-4" />
-                              </Button>
-                            </>
-                          )}
-                        </div>
-                        {room.images && room.images.length > 1 && (
-                          <div className="flex gap-2 overflow-x-auto">
-                            {room.images.map((image, index) => (
-                              <button
-                                key={index}
-                                onClick={() => setCurrentImageIndex(index)}
-                                className={`relative w-16 h-16 flex-shrink-0 rounded border-2 ${
-                                  currentImageIndex === index ? "border-blue-500" : "border-gray-200"
-                                }`}
-                              >
-                                <Image
-                                  src={image || "/placeholder.svg"}
-                                  alt={`Thumbnail ${index + 1}`}
-                                  fill
-                                  className="object-cover rounded"
-                                />
-                              </button>
-                            ))}
-                          </div>
-                        )}
-                      </div>
+                      <RoomImageSlider images={room.images} roomId={room.id} />
 
                       {/* Room Details & Booking */}
                       <div className="space-y-4">

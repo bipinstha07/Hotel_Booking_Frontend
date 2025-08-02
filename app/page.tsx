@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useMemo, memo } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
@@ -40,6 +40,78 @@ const roomTypes = {
   FOUR_SEATER_NORMAL: "Four Seater Normal",
 }
 
+// Room Image Slider Component - moved outside main component and memoized
+const RoomImageSlider = memo(({ images, roomId }: { images: string[], roomId: number }) => {
+  const [currentIndex, setCurrentIndex] = useState(0)
+
+  const nextImage = () => {
+    setCurrentIndex((prev) => (prev + 1) % images.length)
+  }
+
+  const prevImage = () => {
+    setCurrentIndex((prev) => (prev - 1 + images.length) % images.length)
+  }
+
+  if (images.length === 0) {
+    return (
+      <div className="relative h-64 bg-gray-200 flex items-center justify-center">
+        <p className="text-gray-500">No images available</p>
+      </div>
+    )
+  }
+
+  return (
+    <div className="relative h-64 group">
+      <Image
+        src={images[currentIndex]}
+        alt={`Room ${roomId} image ${currentIndex + 1}`}
+        fill
+        className="object-cover transition-opacity duration-300"
+        priority={currentIndex === 0}
+      />
+      
+      {/* Navigation arrows - only visible on hover when more than 1 image */}
+      {images.length > 1 && (
+        <>
+          <button
+            onClick={prevImage}
+            className="absolute left-2 top-1/2 transform -translate-y-1/2 bg-black/70 hover:bg-black/90 text-white p-2 rounded-full transition-all duration-200 z-10 opacity-0 group-hover:opacity-100"
+          >
+            <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+            </svg>
+          </button>
+          <button
+            onClick={nextImage}
+            className="absolute right-2 top-1/2 transform -translate-y-1/2 bg-black/70 hover:bg-black/90 text-white p-2 rounded-full transition-all duration-200 z-10 opacity-0 group-hover:opacity-100"
+          >
+            <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+            </svg>
+          </button>
+        </>
+      )}
+      
+      {/* Image indicators - only visible on hover when more than 1 image */}
+      {images.length > 1 && (
+        <div className="absolute bottom-2 left-1/2 transform -translate-x-1/2 flex space-x-1 z-10 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
+          {images.map((_, index) => (
+            <button
+              key={index}
+              onClick={() => setCurrentIndex(index)}
+              className={`w-3 h-3 rounded-full transition-colors duration-200 ${
+                index === currentIndex ? 'bg-white' : 'bg-white/50'
+              }`}
+            />
+          ))}
+        </div>
+      )}
+    </div>
+  )
+})
+
+RoomImageSlider.displayName = 'RoomImageSlider'
+
 export default function HomePage() {
   const [rooms, setRooms] = useState<Room[]>([])
   const [loading, setLoading] = useState(true)
@@ -57,83 +129,16 @@ export default function HomePage() {
     notes: "",
   })
   const [currentImageIndex, setCurrentImageIndex] = useState(0)
+  const [customerData, setCustomerData] = useState<any>(null)
+  const [mounted, setMounted] = useState(false)
 
-  // Background images for hero slider
-  const heroImages = [
+  // Background images for hero slider - memoized to prevent recreation
+  const heroImages = useMemo(() => [
     "/heroImages/image1.jpg",
     "/heroImages/image2.jpg", 
     "/heroImages/image3.jpg",
     "/heroImages/image4.jpg"
-  ]
-
-  // Room Image Slider Component
-  const RoomImageSlider = ({ images, roomId }: { images: string[], roomId: number }) => {
-    const [currentIndex, setCurrentIndex] = useState(0)
-
-    const nextImage = () => {
-      setCurrentIndex((prev) => (prev + 1) % images.length)
-    }
-
-    const prevImage = () => {
-      setCurrentIndex((prev) => (prev - 1 + images.length) % images.length)
-    }
-
-    if (images.length === 0) {
-      return (
-        <div className="relative h-64 bg-gray-200 flex items-center justify-center">
-          <p className="text-gray-500">No images available</p>
-        </div>
-      )
-    }
-
-    return (
-      <div className="relative h-64 group">
-        <Image
-          src={images[currentIndex]}
-          alt={`Room ${roomId} image ${currentIndex + 1}`}
-          fill
-          className="object-cover transition-opacity duration-300"
-        />
-        
-        {/* Navigation arrows - only visible on hover when more than 1 image */}
-        {images.length > 1 && (
-          <>
-            <button
-              onClick={prevImage}
-              className="absolute left-2 top-1/2 transform -translate-y-1/2 bg-black/70 hover:bg-black/90 text-white p-2 rounded-full transition-all duration-200 z-10 opacity-0 group-hover:opacity-100"
-            >
-              <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-              </svg>
-            </button>
-            <button
-              onClick={nextImage}
-              className="absolute right-2 top-1/2 transform -translate-y-1/2 bg-black/70 hover:bg-black/90 text-white p-2 rounded-full transition-all duration-200 z-10 opacity-0 group-hover:opacity-100"
-            >
-              <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-              </svg>
-            </button>
-          </>
-        )}
-        
-        {/* Image indicators - only visible on hover when more than 1 image */}
-        {images.length > 1 && (
-          <div className="absolute bottom-2 left-1/2 transform -translate-x-1/2 flex space-x-1 z-10 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
-            {images.map((_, index) => (
-              <button
-                key={index}
-                onClick={() => setCurrentIndex(index)}
-                className={`w-3 h-3 rounded-full transition-colors duration-200 ${
-                  index === currentIndex ? 'bg-white' : 'bg-white/50'
-                }`}
-              />
-            ))}
-          </div>
-        )}
-      </div>
-    )
-  }
+  ], [])
 
   // Fetch room images for a specific room
   const fetchRoomImages = async (roomId: number) => {
@@ -222,6 +227,29 @@ export default function HomePage() {
     fetchRooms()
   }, [])
 
+  // Check for customer authentication
+  useEffect(() => {
+    setMounted(true)
+    const customerToken = localStorage.getItem("customerToken")
+    const storedCustomerData = localStorage.getItem("customerData")
+    
+    console.log('Checking authentication...')
+    console.log('Customer token:', customerToken ? 'Present' : 'Missing')
+    console.log('Stored customer data:', storedCustomerData)
+    
+    if (customerToken && storedCustomerData) {
+      try {
+        const parsedData = JSON.parse(storedCustomerData)
+        console.log('Parsed customer data:', parsedData)
+        setCustomerData(parsedData)
+      } catch (error) {
+        console.error("Error parsing customer data:", error)
+      }
+    } else {
+      console.log('No customer data found')
+    }
+  }, [])
+
   // Auto-slide hero images
   useEffect(() => {
     const interval = setInterval(() => {
@@ -233,8 +261,21 @@ export default function HomePage() {
     return () => clearInterval(interval)
   }, [heroImages.length])
 
+  const handleLogout = () => {
+    localStorage.removeItem("customerToken")
+    localStorage.removeItem("customerData")
+    setCustomerData(null)
+    window.location.reload()
+  }
+
   const handleBooking = async (room: Room) => {
-    if (!checkInDate || !checkOutDate || !bookingData.customerName || !bookingData.customerEmail) {
+    if (!checkInDate || !checkOutDate) {
+      toast.error("Please select check-in and check-out dates")
+      return
+    }
+
+    // If user is logged in, use their data; otherwise require manual input
+    if (!customerData && (!bookingData.customerName || !bookingData.customerEmail)) {
       toast.error("Please fill all required fields")
       return
     }
@@ -243,9 +284,9 @@ export default function HomePage() {
     const totalPrice = days * room.pricePerNight
 
     const booking = {
-      customerName: bookingData.customerName,
-      customerEmail: bookingData.customerEmail,
-      phoneNumber: bookingData.phone,
+      customerName: customerData?.userDetails?.name || bookingData.customerName,
+      customerEmail: customerData?.userDetails?.email || bookingData.customerEmail,
+      phoneNumber: customerData?.userDetails?.number || bookingData.phone,
       checkInDate: format(checkInDate, "yyyy-MM-dd"),
       checkOutDate: format(checkOutDate, "yyyy-MM-dd"),
       numberOfGuest: bookingGuests,
@@ -277,7 +318,8 @@ export default function HomePage() {
     }
   }
 
-  const filteredRooms = rooms.filter((room) => {
+  // Memoize filtered rooms to prevent unnecessary re-renders
+  const filteredRooms = useMemo(() => rooms.filter((room) => {
     // Check if room is available
     if (!room.available) return false
     
@@ -292,7 +334,7 @@ export default function HomePage() {
     if (priceRange.max && room.pricePerNight > Number.parseInt(priceRange.max)) return false
     
     return true
-  })
+  }), [rooms, guests, selectedRoomType, priceRange.min, priceRange.max])
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -311,13 +353,52 @@ export default function HomePage() {
           
             </div>
             <nav className="flex items-center space-x-4">
-          
-              <Link href="/customer/login">
-                <Button variant="outline">Customer Login</Button>
-              </Link>
-              <Link href="/admin/login">
-                <Button variant="outline">Admin Login</Button>
-              </Link>
+              {mounted && customerData ? (
+                <>
+                  <div className="flex items-center space-x-3">
+                    <div className="flex items-center space-x-2">
+                      {customerData.userDetails?.userImage && (
+                        <div className="w-8 h-8 rounded-full overflow-hidden">
+                          <img 
+                            src={customerData.userDetails.userImage} 
+                            alt="Profile" 
+                            className="w-full h-full object-cover"
+                          />
+                        </div>
+                      )}
+                      <span className="text-sm text-gray-700 font-medium">
+                        Welcome, {customerData.userDetails?.name || customerData.username}
+                      </span>
+                    </div>
+                    <Link href="/customer/profile">
+                      <Button 
+                        variant="outline" 
+                        size="sm"
+                        className="text-blue-600 hover:text-blue-700 border-blue-200 hover:border-blue-300"
+                      >
+                        Profile
+                      </Button>
+                    </Link>
+                    <Button 
+                      variant="outline" 
+                      size="sm"
+                      onClick={handleLogout}
+                      className="text-red-600 hover:text-red-700 border-red-200 hover:border-red-300"
+                    >
+                      Logout
+                    </Button>
+                  </div>
+                </>
+              ) : (
+                <>
+                  <Link href="/customer/login">
+                    <Button variant="outline">Customer Login</Button>
+                  </Link>
+                  <Link href="/admin/login">
+                    <Button variant="outline">Admin Login</Button>
+                  </Link>
+                </>
+              )}
             </nav>
           </div>
         </div>
@@ -453,11 +534,11 @@ export default function HomePage() {
             <p className="mt-2 text-gray-600">Loading rooms...</p>
           </div>
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-1 lg:grid-cols-2 xl:grid-cols-2 gap-8">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {filteredRooms.map((room) => (
             <Card key={room.id} className="overflow-hidden hover:shadow-lg transition-shadow h-[600px] flex flex-col">
               <div className="relative">
-                <RoomImageSlider images={room.images} roomId={room.id} />
+                <RoomImageSlider key={`${room.id}-${room.images.length}`} images={room.images} roomId={room.id} />
                 <Badge className="absolute top-2 right-2 z-20 bg-green-500">Available</Badge>
               </div>
               <CardHeader>
@@ -471,7 +552,7 @@ export default function HomePage() {
                   <Users className="h-4 w-4 mr-2 text-gray-500" />
                   <span className="text-sm text-gray-600">Up to {room.capacity} guests</span>
                 </div>
-                <p className="text-gray-600 mb-4 flex-1">{room.description}</p>
+                <p className="text-gray-600 mb-4 text-sm flex-1">{room.description}</p>
                 <div className="flex flex-wrap gap-2 mb-4">
                   {room.amenities && Array.isArray(room.amenities) && room.amenities.map((amenity, index) => (
                     <Badge key={index} variant="secondary" className="text-xs">
@@ -491,34 +572,60 @@ export default function HomePage() {
                       <DialogTitle>Book {roomTypes[room.roomType as keyof typeof roomTypes]}</DialogTitle>
                     </DialogHeader>
                     <div className="space-y-4">
-                      <div>
-                        <Label htmlFor="customerName">Full Name *</Label>
-                        <Input
-                          id="customerName"
-                          value={bookingData.customerName}
-                          onChange={(e) => setBookingData({ ...bookingData, customerName: e.target.value })}
-                          placeholder="Enter your full name"
-                        />
-                      </div>
-                      <div>
-                        <Label htmlFor="customerEmail">Email *</Label>
-                        <Input
-                          id="customerEmail"
-                          type="email"
-                          value={bookingData.customerEmail}
-                          onChange={(e) => setBookingData({ ...bookingData, customerEmail: e.target.value })}
-                          placeholder="Enter your email"
-                        />
-                      </div>
-                      <div>
-                        <Label htmlFor="phone">Phone Number</Label>
-                        <Input
-                          id="phone"
-                          value={bookingData.phone}
-                          onChange={(e) => setBookingData({ ...bookingData, phone: e.target.value })}
-                          placeholder="Enter your phone number"
-                        />
-                      </div>
+                      {customerData ? (
+                        // Show logged-in user info (read-only)
+                        <div className="space-y-4">
+                          <div className="bg-green-50 p-4 rounded-lg border border-green-200">
+                            <div className="flex items-center space-x-2 mb-2">
+                              <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+                              <span className="text-sm font-medium text-green-800">Logged in as: {customerData.userDetails?.name || customerData.username}</span>
+                            </div>
+                            <div className="text-sm text-green-700">
+                              <p>Email: {customerData.userDetails?.email || customerData.username}</p>
+                              {customerData.userDetails?.number && (
+                                <p>Phone: {customerData.userDetails?.number}</p>
+                              )}
+                            </div>
+                            {/* Debug info */}
+                            <div className="text-xs text-gray-500 mt-2">
+                              <p>Debug - customerData keys: {Object.keys(customerData).join(', ')}</p>
+                              <p>Debug - userDetails: {customerData.userDetails ? 'Present' : 'Missing'}</p>
+                            </div>
+                          </div>
+                        </div>
+                      ) : (
+                        // Show manual input fields for non-logged-in users
+                        <>
+                          <div>
+                            <Label htmlFor="customerName">Full Name *</Label>
+                            <Input
+                              id="customerName"
+                              value={bookingData.customerName}
+                              onChange={(e) => setBookingData({ ...bookingData, customerName: e.target.value })}
+                              placeholder="Enter your full name"
+                            />
+                          </div>
+                          <div>
+                            <Label htmlFor="customerEmail">Email *</Label>
+                            <Input
+                              id="customerEmail"
+                              type="email"
+                              value={bookingData.customerEmail}
+                              onChange={(e) => setBookingData({ ...bookingData, customerEmail: e.target.value })}
+                              placeholder="Enter your email"
+                            />
+                          </div>
+                          <div>
+                            <Label htmlFor="phone">Phone Number</Label>
+                            <Input
+                              id="phone"
+                              value={bookingData.phone}
+                              onChange={(e) => setBookingData({ ...bookingData, phone: e.target.value })}
+                              placeholder="Enter your phone number"
+                            />
+                          </div>
+                        </>
+                      )}
                       
                       {/* Check-in and Check-out Dates */}
                       <div className="grid grid-cols-2 gap-4">
@@ -606,9 +713,9 @@ export default function HomePage() {
                       <Button
                         className="w-full"
                         onClick={() => handleBooking(room)}
-                        disabled={!checkInDate || !checkOutDate || !bookingData.customerName || !bookingData.customerEmail}
+                        disabled={!checkInDate || !checkOutDate || (!customerData && (!bookingData.customerName || !bookingData.customerEmail))}
                       >
-                        Confirm Booking
+                        {customerData ? "Book with My Account" : "Confirm Booking"}
                       </Button>
                     </div>
                   </DialogContent>

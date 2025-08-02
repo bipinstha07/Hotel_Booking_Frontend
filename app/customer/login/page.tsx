@@ -46,44 +46,149 @@ export default function CustomerAuth() {
     }
 
     try {
-      const response = await fetch("/api/users/login", {
+      const response = await fetch("http://localhost:8080/auth/login", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          email: loginData.email,
+          username: loginData.email,
           password: loginData.password,
         }),
       })
 
-      if (!response.ok) {
+      if (response.ok) {
+        const data = await response.json()
+        console.log('Login successful!')
+        console.log('Bearer Token:', data.token)
+        console.log('Username:', data.username)
+        localStorage.setItem("customerToken", data.token)
+        
+        // Fetch customer details using the token
+        try {
+          console.log('Fetching user details for:', data.username)
+          console.log('Using token:', data.token)
+          console.log('Full Authorization header:', `Bearer ${data.token}`)
+          
+          // Test if the endpoint is accessible
+          console.log('Testing endpoint accessibility...')
+          
+          // Add a small delay to ensure token is valid
+          await new Promise(resolve => setTimeout(resolve, 100))
+          
+          const userResponse = await fetch(`http://localhost:8080/user/${data.username}`, {
+            method: 'GET',
+            headers: {
+              'Authorization': `Bearer ${data.token}`,
+              'Content-Type': 'application/json',
+            },
+          })
+          
+          console.log('User response status:', userResponse.status)
+          console.log('User response headers:', userResponse.headers)
+          
+          if (userResponse.ok) {
+            const userData = await userResponse.json()
+            
+            // Fetch user bookings
+            try {
+              console.log('Fetching bookings for user:', data.username)
+              const bookingsResponse = await fetch(`http://localhost:8080/user/${data.username}/booking`, {
+                method: 'GET',
+                headers: {
+                  'Authorization': `Bearer ${data.token}`,
+                  'Content-Type': 'application/json',
+                },
+              })
+              
+              console.log('Bookings response status:', bookingsResponse.status)
+              
+              if (bookingsResponse.ok) {
+                const bookingsData = await bookingsResponse.json()
+                console.log('User bookings:', bookingsData)
+                
+                const customerDataToStore = {
+                  username: data.username,
+                  token: data.token,
+                  userDetails: userData,
+                  bookings: bookingsData
+                }
+                console.log('Login - storing customer data:', customerDataToStore)
+                localStorage.setItem("customerData", JSON.stringify(customerDataToStore))
+              } else {
+                console.log('Failed to fetch bookings, using empty array')
+                localStorage.setItem("customerData", JSON.stringify({
+                  username: data.username,
+                  token: data.token,
+                  userDetails: userData,
+                  bookings: []
+                }))
+              }
+            } catch (bookingError) {
+              console.error('Error fetching bookings:', bookingError)
+              localStorage.setItem("customerData", JSON.stringify({
+                username: data.username,
+                token: data.token,
+                userDetails: userData,
+                bookings: []
+              }))
+            }
+            
+            // Show success toast with user details
+            toast({
+              title: "Login Successful!",
+              description: `Welcome back, ${userData.name || data.username}!`,
+              variant: "default",
+              duration: 3000,
+              className: "bg-green-500 border-green-200 text-white",
+            })
+          } else {
+            // Log error details
+            const errorText = await userResponse.text()
+            console.error('User details fetch failed:', userResponse.status, errorText)
+            
+            // Fallback if user details fetch fails
+            localStorage.setItem("customerData", JSON.stringify({
+              username: data.username,
+              token: data.token,
+            }))
+            
+            toast({
+              title: "Login Successful!",
+              description: `Welcome back, ${data.username}!`,
+              variant: "default",
+              duration: 3000,
+              className: "bg-green-500 border-green-200 text-white",
+            })
+          }
+        } catch (error) {
+          console.error('Error fetching user details:', error)
+          console.error('Error details:', {
+            message: error instanceof Error ? error.message : 'Unknown error',
+            stack: error instanceof Error ? error.stack : 'No stack trace',
+            type: error instanceof Error ? error.constructor.name : 'Unknown type'
+          })
+          
+          // Fallback if user details fetch fails
+          localStorage.setItem("customerData", JSON.stringify({
+            username: data.username,
+            token: data.token,
+          }))
+          
+          toast({
+            title: "Login Successful!",
+            description: `Welcome back, ${data.username}!`,
+            variant: "default",
+            duration: 3000,
+            className: "bg-green-500 border-green-200 text-white",
+          })
+        }
+        
+        router.push("/")
+      } else {
         const errorData = await response.json()
         throw new Error(errorData.message || "Login failed")
       }
-
-      const userData = await response.json()
-      
-      localStorage.setItem("customerToken", userData.token || "user-token")
-      localStorage.setItem(
-        "customerData",
-        JSON.stringify({
-          name: userData.name,
-          email: userData.email,
-          id: userData.id,
-        }),
-      )
-      
-      // Show success toast
-      toast({
-        title: "Login Successful!",
-        description: `Welcome back, ${userData.name}!`,
-        variant: "default",
-        duration: 3000,
-        className: "bg-green-500 border-green-200 text-white",
-      })
-      
-      router.push("/")
     } catch (error) {
       console.error("Login error:", error)
       setError(error instanceof Error ? error.message : "Login failed. Please try again.")

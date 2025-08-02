@@ -26,12 +26,29 @@ export default function AdminLogin() {
     setLoading(true)
     setError("")
 
-    // Mock authentication - replace with actual API call
-    if (credentials.email === "admin@hotel.com" && credentials.password === "admin123") {
-      localStorage.setItem("adminToken", "mock-admin-token")
-      router.push("/admin/dashboard")
-    } else {
-      setError("Invalid email or password")
+    try {
+      const response = await fetch('http://localhost:8080/auth/login', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          username: credentials.email,
+          password: credentials.password
+        })
+      })
+
+      if (response.ok) {
+        const data = await response.json()
+        localStorage.setItem("adminToken", data.token)
+        router.push("/admin/dashboard")
+      } else {
+        const errorData = await response.json()
+        setError(errorData.message || "Invalid credentials")
+      }
+    } catch (error) {
+      console.error('Login error:', error)
+      setError("Network error. Please try again.")
     }
 
     setLoading(false)
@@ -96,9 +113,9 @@ export default function AdminLogin() {
             </div>
 
             <div className="mt-4 p-4 bg-gray-50 rounded-lg">
-              <p className="text-sm text-gray-600 font-medium">Demo Credentials:</p>
-              <p className="text-xs text-gray-500">Email: admin@hotel.com</p>
-              <p className="text-xs text-gray-500">Password: admin123</p>
+              <p className="text-sm text-gray-600 font-medium">Backend Connected:</p>
+              <p className="text-xs text-gray-500">Use your backend admin credentials</p>
+              <p className="text-xs text-gray-500">Endpoint: POST /login</p>
             </div>
           </CardContent>
         </Card>

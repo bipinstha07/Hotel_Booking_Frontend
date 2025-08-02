@@ -54,36 +54,86 @@ export default function CustomerProfile() {
       return
     }
 
-    // Load customer data
+    // Load customer data from localStorage
     const storedData = localStorage.getItem("customerData")
+    console.log('Profile page - stored data:', storedData)
+    
     if (storedData) {
       const data = JSON.parse(storedData)
-      setCustomerData(data)
-      setEditData(data)
+      console.log('Profile page - parsed data:', data)
+      console.log('Profile page - userDetails:', data.userDetails)
+      
+      // Extract user details from the stored data
+      if (data.userDetails) {
+        const userDetails = data.userDetails
+        console.log('Profile page - userDetails extracted:', userDetails)
+        const customerInfo = {
+          name: userDetails.name || "",
+          email: userDetails.email || "",
+          number: userDetails.number || "",
+          address: userDetails.address || "",
+          dateOfBirth: userDetails.dateOfBirth || "",
+          profileImage: userDetails.userImage || "",
+        }
+        console.log('Profile page - customerInfo:', customerInfo)
+        setCustomerData(customerInfo)
+        setEditData(customerInfo)
+      } else {
+        console.log('Profile page - no userDetails, using fallback')
+        // Fallback to basic data
+        setCustomerData({
+          name: data.username || "",
+          email: data.username || "",
+        })
+        setEditData({
+          name: data.username || "",
+          email: data.username || "",
+        })
+      }
+    } else {
+      console.log('Profile page - no stored data found')
     }
 
-    // Mock bookings data
-    const mockBookings: Booking[] = [
-      {
-        id: 1,
-        roomType: "DOUBLE_DELUXE",
-        checkInDate: "2024-02-15",
-        checkOutDate: "2024-02-18",
-        totalPrice: 13500,
-        status: "Confirmed",
-        bookingCreated: "2024-02-01T10:30:00",
-      },
-      {
-        id: 2,
-        roomType: "SINGLE_AC",
-        checkInDate: "2024-03-10",
-        checkOutDate: "2024-03-12",
-        totalPrice: 5000,
-        status: "Completed",
-        bookingCreated: "2024-02-25T14:20:00",
-      },
-    ]
-    setBookings(mockBookings)
+    // Load actual bookings from localStorage
+    const storedDataForBookings = localStorage.getItem("customerData")
+    if (storedDataForBookings) {
+      const data = JSON.parse(storedDataForBookings)
+      if (data.bookings && Array.isArray(data.bookings)) {
+        const actualBookings: Booking[] = data.bookings.map((booking: any) => ({
+          id: booking.id || Math.random(),
+          roomType: booking.roomEntity?.roomType || "UNKNOWN",
+          checkInDate: booking.checkInDate || "",
+          checkOutDate: booking.checkOutDate || "",
+          totalPrice: booking.totalPrice || 0,
+          status: booking.bookingStatus || "PENDING",
+          bookingCreated: booking.bookingCreated || "",
+        }))
+        setBookings(actualBookings)
+      } else {
+        // Fallback to mock data if no bookings
+        const mockBookings: Booking[] = [
+          {
+            id: 1,
+            roomType: "DOUBLE_DELUXE",
+            checkInDate: "2024-02-15",
+            checkOutDate: "2024-02-18",
+            totalPrice: 13500,
+            status: "Confirmed",
+            bookingCreated: "2024-02-01T10:30:00",
+          },
+          {
+            id: 2,
+            roomType: "SINGLE_AC",
+            checkInDate: "2024-03-10",
+            checkOutDate: "2024-03-12",
+            totalPrice: 5000,
+            status: "Completed",
+            bookingCreated: "2024-02-25T14:20:00",
+          },
+        ]
+        setBookings(mockBookings)
+      }
+    }
   }, [router])
 
   const handleUpdateProfile = async () => {

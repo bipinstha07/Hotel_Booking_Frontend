@@ -2,7 +2,7 @@
 
 import type React from "react"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, memo } from "react"
 import dynamic from "next/dynamic"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
@@ -43,6 +43,7 @@ interface Booking {
   notes: string
   numberOfGuest: number
   roomId: string
+  roomNumber?: string
   roomEntity?: {
     id: string
     roomType: string
@@ -76,6 +77,77 @@ const roomTypeLabels = {
   FOUR_SEATER_NORMAL: "Four Seater Normal",
 }
 
+// Image Slider Component - moved outside main component and memoized
+const ImageSlider = memo(({ images, roomId }: { images: string[], roomId: string | number }) => {
+  const [currentImageIndex, setCurrentImageIndex] = useState(0)
+
+  const nextImage = () => {
+    setCurrentImageIndex((prev) => (prev + 1) % images.length)
+  }
+
+  const prevImage = () => {
+    setCurrentImageIndex((prev) => (prev - 1 + images.length) % images.length)
+  }
+
+  console.log(`Rendering slider for room ${roomId} with ${images.length} images:`, images)
+  console.log(`Current image URL (index ${currentImageIndex}):`, images[currentImageIndex])
+
+  if (images.length === 0) {
+    return (
+      <div className="relative h-64 bg-gray-200 flex items-center justify-center">
+        <p className="text-gray-500">No images available</p>
+      </div>
+    )
+  }
+
+  return (
+    <div className="relative h-64 group">
+      <Image
+        src={images[currentImageIndex]}
+        alt={`Room ${roomId} image ${currentImageIndex + 1}`}
+        fill
+        className="object-cover transition-opacity duration-300"
+        priority={currentImageIndex === 0}
+      />
+      
+      {/* Navigation arrows */}
+      {images.length > 1 && (
+        <>
+          <button
+            onClick={prevImage}
+            className="absolute left-2 top-1/2 transform -translate-y-1/2 bg-black/50 hover:bg-black/70 text-white p-1 rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-200"
+          >
+            <ChevronLeft className="h-4 w-4" />
+          </button>
+          <button
+            onClick={nextImage}
+            className="absolute right-2 top-1/2 transform -translate-y-1/2 bg-black/50 hover:bg-black/70 text-white p-1 rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-200"
+          >
+            <ChevronRight className="h-4 w-4" />
+          </button>
+        </>
+      )}
+      
+      {/* Image indicators */}
+      {images.length > 1 && (
+        <div className="absolute bottom-2 left-1/2 transform -translate-x-1/2 flex space-x-1">
+          {images.map((_, index) => (
+            <button
+              key={index}
+              onClick={() => setCurrentImageIndex(index)}
+              className={`w-2 h-2 rounded-full transition-colors duration-200 ${
+                index === currentImageIndex ? 'bg-white' : 'bg-white/50'
+              }`}
+            />
+          ))}
+        </div>
+      )}
+    </div>
+  )
+})
+
+ImageSlider.displayName = 'ImageSlider'
+
 export default function AdminDashboard() {
   const [mounted, setMounted] = useState(false)
   const [rooms, setRooms] = useState<Room[]>([])
@@ -100,74 +172,6 @@ export default function AdminDashboard() {
   const [bookingStatusFilter, setBookingStatusFilter] = useState<string>("ALL")
   const router = useRouter()
   const { toast } = useToast()
-
-  // Image Slider Component
-  const ImageSlider = ({ images, roomId }: { images: string[], roomId: string | number }) => {
-    const [currentImageIndex, setCurrentImageIndex] = useState(0)
-
-    const nextImage = () => {
-      setCurrentImageIndex((prev) => (prev + 1) % images.length)
-    }
-
-    const prevImage = () => {
-      setCurrentImageIndex((prev) => (prev - 1 + images.length) % images.length)
-    }
-
-    console.log(`Rendering slider for room ${roomId} with ${images.length} images:`, images)
-    console.log(`Current image URL (index ${currentImageIndex}):`, images[currentImageIndex])
-
-    if (images.length === 0) {
-      return (
-        <div className="relative h-64 bg-gray-200 flex items-center justify-center">
-          <p className="text-gray-500">No images available</p>
-        </div>
-      )
-    }
-
-    return (
-      <div className="relative h-64 group">
-        <Image
-          src={images[currentImageIndex]}
-          alt={`Room ${roomId} image ${currentImageIndex + 1}`}
-          fill
-          className="object-cover transition-opacity duration-300"
-        />
-        
-        {/* Navigation arrows */}
-        {images.length > 1 && (
-          <>
-            <button
-              onClick={prevImage}
-              className="absolute left-2 top-1/2 transform -translate-y-1/2 bg-black/50 hover:bg-black/70 text-white p-1 rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-200"
-            >
-              <ChevronLeft className="h-4 w-4" />
-            </button>
-            <button
-              onClick={nextImage}
-              className="absolute right-2 top-1/2 transform -translate-y-1/2 bg-black/50 hover:bg-black/70 text-white p-1 rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-200"
-            >
-              <ChevronRight className="h-4 w-4" />
-            </button>
-          </>
-        )}
-        
-        {/* Image indicators */}
-        {images.length > 1 && (
-          <div className="absolute bottom-2 left-1/2 transform -translate-x-1/2 flex space-x-1">
-            {images.map((_, index) => (
-              <button
-                key={index}
-                onClick={() => setCurrentImageIndex(index)}
-                className={`w-2 h-2 rounded-full transition-colors duration-200 ${
-                  index === currentImageIndex ? 'bg-white' : 'bg-white/50'
-                }`}
-              />
-            ))}
-          </div>
-        )}
-      </div>
-    )
-  }
 
   // Prevent hydration mismatch
   useEffect(() => {
@@ -961,69 +965,82 @@ export default function AdminDashboard() {
     return aCheckIn.getTime() - bCheckIn.getTime()
   })
 
+  // Calculate booking counts by status
+  const getBookingCounts = () => {
+    const counts = {
+      ALL: bookings.length,
+      PENDING: bookings.filter(b => b.bookingStatus?.toUpperCase() === "PENDING").length,
+      APPROVED: bookings.filter(b => b.bookingStatus?.toUpperCase() === "APPROVED").length,
+      CANCELLED: bookings.filter(b => b.bookingStatus?.toUpperCase() === "CANCELLED").length,
+      COMPLETED: bookings.filter(b => b.bookingStatus?.toUpperCase() === "COMPLETED").length,
+      DELETED: bookings.filter(b => b.bookingStatus?.toUpperCase() === "DELETED").length,
+    }
+    return counts
+  }
+
   const getStatusActions = (booking: Booking) => {
     switch (booking.bookingStatus) {
       case "PENDING":
         return (
-          <div className="flex gap-2">
+          <div className="flex gap-1">
             <Button
               size="sm"
               onClick={() => handleApproveBooking(booking.id!)}
-              className="bg-green-600 hover:bg-green-700"
+              className="bg-green-600 hover:bg-green-700 text-xs px-2 py-1 h-6"
             >
               Approve
             </Button>
-            <Button size="sm" variant="outline" onClick={() => handleCancelBooking(booking.id!)}>
+            <Button size="sm" variant="outline" onClick={() => handleCancelBooking(booking.id!)} className="text-xs px-2 py-1 h-6">
               Cancel
             </Button>
-            <Button size="sm" variant="destructive" onClick={() => handleDeleteBooking(booking.id!, booking.customerName)}>
+            <Button size="sm" variant="destructive" onClick={() => handleDeleteBooking(booking.id!, booking.customerName)} className="text-xs px-2 py-1 h-6">
               Delete
             </Button>
           </div>
         )
       case "APPROVED":
         return (
-          <div className="flex gap-2">
+          <div className="flex gap-1">
             <Button
               size="sm"
               onClick={() => handleCompleteBooking(booking.id!)}
-              className="bg-blue-600 hover:bg-blue-700"
+              className="bg-blue-600 hover:bg-blue-700 text-xs px-2 py-1 h-6"
             >
               Complete
             </Button>
-            <Button size="sm" variant="outline" onClick={() => handleCancelBooking(booking.id!)}>
+            <Button size="sm" variant="outline" onClick={() => handleCancelBooking(booking.id!)} className="text-xs px-2 py-1 h-6">
               Cancel
             </Button>
-            <Button size="sm" variant="destructive" onClick={() => handleDeleteBooking(booking.id!, booking.customerName)}>
+            <Button size="sm" variant="destructive" onClick={() => handleDeleteBooking(booking.id!, booking.customerName)} className="text-xs px-2 py-1 h-6">
               Delete
             </Button>
           </div>
         )
       case "COMPLETED":
         return (
-          <div className="flex gap-2">
-            <Button size="sm" variant="destructive" onClick={() => handleDeleteBooking(booking.id!, booking.customerName)}>
+          <div className="flex gap-1">
+            <Button size="sm" variant="destructive" onClick={() => handleDeleteBooking(booking.id!, booking.customerName)} className="text-xs px-2 py-1 h-6">
               Delete
             </Button>
           </div>
         )
       case "DELETED":
         return (
-          <div className="flex gap-2">
-            <span className="text-sm text-gray-500 italic">No actions available</span>
+          <div className="flex gap-1">
+            <span className="text-xs text-gray-500 italic">No actions</span>
           </div>
         )
       default:
         return (
-          <div className="flex gap-2">
+          <div className="flex gap-1">
             <Button
               size="sm"
               onClick={() => handleApproveBooking(booking.id!)}
-              className="bg-green-600 hover:bg-green-700"
+              className="bg-green-600 hover:bg-green-700 text-xs px-2 py-1 h-6"
             >
               Approve
             </Button>
-            <Button size="sm" variant="destructive" onClick={() => handleDeleteBooking(booking.id!, booking.customerName)}>
+            <Button size="sm" variant="destructive" onClick={() => handleDeleteBooking(booking.id!, booking.customerName)} className="text-xs px-2 py-1 h-6">
               Delete
             </Button>
           </div>
@@ -1248,7 +1265,7 @@ export default function AdminDashboard() {
               </div>
             </CardHeader>
             <CardContent>
-              <div className="grid grid-cols-1 md:grid-cols-1 lg:grid-cols-2 xl:grid-cols-2 gap-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                 {filteredRooms.map((room) => (
                   <Card key={room.id} className="overflow-hidden h-[600px] flex flex-col">
                     <div className="relative h-64">
@@ -1326,54 +1343,81 @@ export default function AdminDashboard() {
               
               {/* Status Filter Buttons */}
               <div className="flex flex-wrap gap-2">
-                <Button
-                  variant={bookingStatusFilter === "ALL" ? "default" : "outline"}
-                  size="sm"
-                  onClick={() => setBookingStatusFilter("ALL")}
-                  className="text-xs"
-                >
-                  ALL
-                </Button>
-                <Button
-                  variant={bookingStatusFilter === "PENDING" ? "default" : "outline"}
-                  size="sm"
-                  onClick={() => setBookingStatusFilter("PENDING")}
-                  className="text-xs bg-yellow-100 hover:bg-yellow-200 text-yellow-800 border-yellow-200"
-                >
-                  Pending
-                </Button>
-                <Button
-                  variant={bookingStatusFilter === "APPROVED" ? "default" : "outline"}
-                  size="sm"
-                  onClick={() => setBookingStatusFilter("APPROVED")}
-                  className="text-xs bg-green-100 hover:bg-green-200 text-green-800 border-green-200"
-                >
-                  Approved
-                </Button>
-                <Button
-                  variant={bookingStatusFilter === "DELETED" ? "default" : "outline"}
-                  size="sm"
-                  onClick={() => setBookingStatusFilter("DELETED")}
-                  className="text-xs bg-gray-100 hover:bg-gray-200 text-gray-800 border-gray-200"
-                >
-                  Deleted
-                </Button>
-                <Button
-                  variant={bookingStatusFilter === "CANCELLED" ? "default" : "outline"}
-                  size="sm"
-                  onClick={() => setBookingStatusFilter("CANCELLED")}
-                  className="text-xs bg-red-100 hover:bg-red-200 text-red-800 border-red-200"
-                >
-                  Cancelled
-                </Button>
-                <Button
-                  variant={bookingStatusFilter === "COMPLETED" ? "default" : "outline"}
-                  size="sm"
-                  onClick={() => setBookingStatusFilter("COMPLETED")}
-                  className="text-xs bg-blue-100 hover:bg-blue-200 text-blue-800 border-blue-200"
-                >
-                  Completed
-                </Button>
+                {(() => {
+                  const counts = getBookingCounts()
+                  return (
+                    <>
+                      <Button
+                        variant={bookingStatusFilter === "ALL" ? "default" : "outline"}
+                        size="sm"
+                        onClick={() => setBookingStatusFilter("ALL")}
+                        className="text-xs font-medium px-3 py-1.5 h-8"
+                      >
+                        ALL ({counts.ALL})
+                      </Button>
+                      <Button
+                        variant={bookingStatusFilter === "PENDING" ? "default" : "outline"}
+                        size="sm"
+                        onClick={() => setBookingStatusFilter("PENDING")}
+                        className={`text-xs font-medium px-3 py-1.5 h-8 ${
+                          bookingStatusFilter === "PENDING" 
+                            ? "bg-yellow-500 hover:bg-yellow-600 text-white border-yellow-500" 
+                            : "bg-yellow-50 hover:bg-yellow-100 text-yellow-700 border-yellow-200"
+                        }`}
+                      >
+                        Pending ({counts.PENDING})
+                      </Button>
+                      <Button
+                        variant={bookingStatusFilter === "APPROVED" ? "default" : "outline"}
+                        size="sm"
+                        onClick={() => setBookingStatusFilter("APPROVED")}
+                        className={`text-xs font-medium px-3 py-1.5 h-8 ${
+                          bookingStatusFilter === "APPROVED" 
+                            ? "bg-green-500 hover:bg-green-600 text-white border-green-500" 
+                            : "bg-green-50 hover:bg-green-100 text-green-700 border-green-200"
+                        }`}
+                      >
+                        Approved ({counts.APPROVED})
+                      </Button>
+                      <Button
+                        variant={bookingStatusFilter === "DELETED" ? "default" : "outline"}
+                        size="sm"
+                        onClick={() => setBookingStatusFilter("DELETED")}
+                        className={`text-xs font-medium px-3 py-1.5 h-8 ${
+                          bookingStatusFilter === "DELETED" 
+                            ? "bg-gray-500 hover:bg-gray-600 text-white border-gray-500" 
+                            : "bg-gray-50 hover:bg-gray-100 text-gray-700 border-gray-200"
+                        }`}
+                      >
+                        Deleted ({counts.DELETED})
+                      </Button>
+                      <Button
+                        variant={bookingStatusFilter === "CANCELLED" ? "default" : "outline"}
+                        size="sm"
+                        onClick={() => setBookingStatusFilter("CANCELLED")}
+                        className={`text-xs font-medium px-3 py-1.5 h-8 ${
+                          bookingStatusFilter === "CANCELLED" 
+                            ? "bg-red-500 hover:bg-red-600 text-white border-red-500" 
+                            : "bg-red-50 hover:bg-red-100 text-red-700 border-red-200"
+                        }`}
+                      >
+                        Cancelled ({counts.CANCELLED})
+                      </Button>
+                      <Button
+                        variant={bookingStatusFilter === "COMPLETED" ? "default" : "outline"}
+                        size="sm"
+                        onClick={() => setBookingStatusFilter("COMPLETED")}
+                        className={`text-xs font-medium px-3 py-1.5 h-8 ${
+                          bookingStatusFilter === "COMPLETED" 
+                            ? "bg-blue-500 hover:bg-blue-600 text-white border-blue-500" 
+                            : "bg-blue-50 hover:bg-blue-100 text-blue-700 border-blue-200"
+                        }`}
+                      >
+                        Completed ({counts.COMPLETED})
+                      </Button>
+                    </>
+                  )
+                })()}
               </div>
             </CardHeader>
             <CardContent>
@@ -1387,43 +1431,52 @@ export default function AdminDashboard() {
                 ) : (
                   filteredBookings.map((booking) => (
                     <Card key={booking.id} className="border-l-4 border-l-blue-500">
-                      <CardContent className="p-4">
-                        <div className="flex justify-between items-start mb-4">
-                          <div>
-                            <h3 className="font-semibold text-lg">
-                              {booking.roomEntity?.roomType || `Room ${booking.roomId}`}
-                            </h3>
-                            <p className="text-sm text-gray-600">Booking ID: #{booking.id}</p>
-                            <p className="text-sm text-gray-600">Customer: {booking.customerName}</p>
-                            <p className="text-sm text-gray-600">Email: {booking.customerEmail}</p>
-                            <p className="text-sm text-gray-600">Phone: {booking.phoneNumber}</p>
+                      <CardContent className="p-3">
+                        <div className="flex justify-between items-start mb-3">
+                          <div className="flex-1">
+                            <div className="flex items-center gap-2 mb-1">
+                              <h3 className="font-semibold text-sm">
+                                {booking.roomEntity?.roomType || `Room ${booking.roomId}`}
+                              </h3>
+                              <Badge className={`text-xs ${getStatusColor(booking.bookingStatus)}`}>
+                                {booking.bookingStatus}
+                              </Badge>
+                            </div>
+                            <div className="grid grid-cols-2 gap-x-4 gap-y-1 text-xs text-gray-600">
+                              <span>ID: #{booking.id}</span>
+                              <span>Customer: {booking.customerName}</span>
+                              <span>Email: {booking.customerEmail}</span>
+                              <span>Phone: {booking.phoneNumber}</span>
+                              {booking.roomNumber && (
+                                <span>Room: {booking.roomNumber}</span>
+                              )}
+                            </div>
                           </div>
-                          <Badge className={getStatusColor(booking.bookingStatus)}>{booking.bookingStatus}</Badge>
                         </div>
 
-                        <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-4">
+                        <div className="grid grid-cols-4 gap-2 mb-3 text-xs">
                           <div>
-                            <Label className="text-sm font-medium text-gray-500">Check-in</Label>
+                            <span className="text-gray-500 font-medium">Check-in</span>
                             <p className="font-medium">{new Date(booking.checkInDate).toLocaleDateString()}</p>
                           </div>
                           <div>
-                            <Label className="text-sm font-medium text-gray-500">Check-out</Label>
+                            <span className="text-gray-500 font-medium">Check-out</span>
                             <p className="font-medium">{new Date(booking.checkOutDate).toLocaleDateString()}</p>
                           </div>
                           <div>
-                            <Label className="text-sm font-medium text-gray-500">Total Amount</Label>
+                            <span className="text-gray-500 font-medium">Amount</span>
                             <p className="font-medium text-green-600">${booking.totalPrice}</p>
                           </div>
                           <div>
-                            <Label className="text-sm font-medium text-gray-500">Booked On</Label>
+                            <span className="text-gray-500 font-medium">Booked</span>
                             <p className="font-medium">{new Date(booking.bookingCreated).toLocaleDateString()}</p>
                           </div>
                         </div>
 
                         {booking.notes && (
-                          <div className="mb-4">
-                            <Label className="text-sm font-medium text-gray-500">Notes</Label>
-                            <p className="text-sm text-gray-700 bg-gray-50 p-2 rounded">{booking.notes}</p>
+                          <div className="mb-3">
+                            <span className="text-xs text-gray-500 font-medium">Notes:</span>
+                            <p className="text-xs text-gray-700 bg-gray-50 p-1 rounded mt-1">{booking.notes}</p>
                           </div>
                         )}
 
