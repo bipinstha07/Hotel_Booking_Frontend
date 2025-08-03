@@ -616,11 +616,7 @@ export default function HomePage() {
                                 <p>Phone: {customerData.userDetails?.number}</p>
                               )}
                             </div>
-                            {/* Debug info */}
-                            <div className="text-xs text-gray-500 mt-2">
-                              <p>Debug - customerData keys: {Object.keys(customerData).join(', ')}</p>
-                              <p>Debug - userDetails: {customerData.userDetails ? 'Present' : 'Missing'}</p>
-                            </div>
+                           
                           </div>
                         </div>
                       ) : (
@@ -698,9 +694,30 @@ export default function HomePage() {
                           min="1"
                           max={room.capacity}
                           value={bookingGuests}
-                          onChange={(e) => setBookingGuests(Number.parseInt(e.target.value))}
+                          onChange={(e) => {
+                            const value = Number.parseInt(e.target.value)
+                            if (value > 0) {
+                              setBookingGuests(value)
+                            }
+                          }}
                           placeholder={`Max ${room.capacity} guests`}
+                          className={bookingGuests > room.capacity || bookingGuests <= 0 ? "border-red-500 focus:border-red-500" : ""}
                         />
+                        {(bookingGuests > room.capacity || bookingGuests <= 0) && (
+                          <div className="mt-2 p-3 bg-red-50 border border-red-200 rounded-lg">
+                            <div className="flex items-center">
+                              <svg className="w-5 h-5 text-red-500 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z" />
+                              </svg>
+                              <span className="text-red-700 text-sm font-medium">
+                                {bookingGuests <= 0 
+                                  ? "Please enter at least 1 guest for booking." 
+                                  : `Maximum capacity for this room is ${room.capacity} guests. Please reduce the number of guests.`
+                                }
+                              </span>
+                            </div>
+                          </div>
+                        )}
                       </div>
                       
                       {/* Notes */}
@@ -743,7 +760,7 @@ export default function HomePage() {
                       <Button
                         className="w-full"
                         onClick={() => handleBooking(room)}
-                        disabled={!checkInDate || !checkOutDate || (!customerData && (!bookingData.customerName || !bookingData.customerEmail))}
+                        disabled={!checkInDate || !checkOutDate || (!customerData && (!bookingData.customerName || !bookingData.customerEmail)) || bookingGuests > room.capacity || bookingGuests <= 0}
                       >
                         {customerData ? "Book with My Account" : "Confirm Booking"}
                       </Button>
