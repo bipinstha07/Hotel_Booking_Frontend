@@ -16,6 +16,7 @@ import { format } from "date-fns"
 import Image from "next/image"
 import Link from "next/link"
 import { toast } from "sonner"
+import { userService } from "@/lib/user-service"
 
 interface Room {
   id: number
@@ -130,6 +131,8 @@ export default function HomePage() {
   })
   const [currentImageIndex, setCurrentImageIndex] = useState(0)
   const [customerData, setCustomerData] = useState<any>(null)
+  const [profileImage, setProfileImage] = useState<string>("")
+  const [isLoadingProfileImage, setIsLoadingProfileImage] = useState(false)
   const [mounted, setMounted] = useState(false)
 
   // Background images for hero slider - memoized to prevent recreation
@@ -137,7 +140,13 @@ export default function HomePage() {
     "/heroImages/image1.jpg",
     "/heroImages/image2.jpg", 
     "/heroImages/image3.jpg",
-    "/heroImages/image4.jpg"
+    "/heroImages/image4.jpg",
+    "/heroImages/image5.jpg",
+    "/heroImages/image6.jpg",
+    "/heroImages/image7.jpg",
+    "/heroImages/image8.jpg",
+    "/heroImages/image9.jpg",
+    "/heroImages/image10.jpg"
   ], [])
 
   // Fetch room images for a specific room
@@ -242,6 +251,14 @@ export default function HomePage() {
         const parsedData = JSON.parse(storedCustomerData)
         console.log('Parsed customer data:', parsedData)
         setCustomerData(parsedData)
+        
+        // Fetch profile image if we have user details
+        if (parsedData.userDetails?.email) {
+          fetchProfileImage(parsedData.userDetails.email)
+        } else if (parsedData.username) {
+          // Fallback to username if no email in userDetails
+          fetchProfileImage(parsedData.username)
+        }
       } catch (error) {
         console.error("Error parsing customer data:", error)
       }
@@ -261,10 +278,25 @@ export default function HomePage() {
     return () => clearInterval(interval)
   }, [heroImages.length])
 
+  const fetchProfileImage = async (email: string) => {
+    try {
+      setIsLoadingProfileImage(true)
+      const imageUrl = await userService.getUserProfileImage(email)
+      setProfileImage(imageUrl)
+    } catch (error) {
+      console.error('Error fetching profile image:', error)
+      // Keep existing profile image or use placeholder
+    } finally {
+      setIsLoadingProfileImage(false)
+    }
+  }
+
   const handleLogout = () => {
     localStorage.removeItem("customerToken")
     localStorage.removeItem("customerData")
     setCustomerData(null)
+    setProfileImage("")
+    setIsLoadingProfileImage(false)
     window.location.reload()
   }
 
@@ -346,9 +378,9 @@ export default function HomePage() {
               <Image
                 src="/logo.png"
                 alt="LuxuryStay Logo"
-                width={180}
-                height={180}
-                className="mr-3"
+                width={130}
+                height={130}
+                className="mr-3 rounded-lg"
               />
           
             </div>
@@ -357,15 +389,13 @@ export default function HomePage() {
                 <>
                   <div className="flex items-center space-x-3">
                     <div className="flex items-center space-x-2">
-                      {customerData.userDetails?.userImage && (
-                        <div className="w-8 h-8 rounded-full overflow-hidden">
-                          <img 
-                            src={customerData.userDetails.userImage} 
-                            alt="Profile" 
-                            className="w-full h-full object-cover"
-                          />
-                        </div>
-                      )}
+                      <div className="w-8 h-8 rounded-full overflow-hidden">
+                        <img 
+                          src={profileImage || "/placeholder-user.jpg"} 
+                          alt="Profile" 
+                          className={`w-full h-full object-cover ${isLoadingProfileImage ? 'animate-pulse' : ''}`}
+                        />
+                      </div>
                       <span className="text-sm text-gray-700 font-medium">
                         Welcome, {customerData.userDetails?.name || customerData.username}
                       </span>

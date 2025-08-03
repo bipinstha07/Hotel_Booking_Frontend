@@ -11,6 +11,7 @@ import { Alert, AlertDescription } from "@/components/ui/alert"
 import { Shield } from "lucide-react"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
+import Image from "next/image"
 
 export default function AdminLogin() {
   const [credentials, setCredentials] = useState({
@@ -58,10 +59,16 @@ export default function AdminLogin() {
     <div className="min-h-screen bg-gray-50 flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8">
       <div className="max-w-md w-full space-y-8">
         <div className="text-center">
-          <div className="mx-auto h-12 w-12 bg-blue-100 rounded-full flex items-center justify-center">
-            <Shield className="h-6 w-6 text-blue-600" />
+          <div className="flex justify-center mb-4">
+            <Image
+              src="/logo.png"
+              alt="LuxuryStay Logo"
+              width={180}
+              height={180}
+              className="rounded-lg "
+            />
           </div>
-          <h2 className="mt-6 text-3xl font-bold text-gray-900">Admin Login</h2>
+          <h2 className="mt-4 text-3xl font-bold text-gray-900">Admin Login</h2>
           <p className="mt-2 text-sm text-gray-600">Sign in to your admin account</p>
         </div>
 
@@ -85,7 +92,7 @@ export default function AdminLogin() {
                   required
                   value={credentials.email}
                   onChange={(e) => setCredentials({ ...credentials, email: e.target.value })}
-                  placeholder="admin@hotel.com"
+                  placeholder="test@gmail.com"
                 />
               </div>
 
@@ -113,9 +120,9 @@ export default function AdminLogin() {
             </div>
 
             <div className="mt-4 p-4 bg-gray-50 rounded-lg">
-              <p className="text-sm text-gray-600 font-medium">Backend Connected:</p>
-              <p className="text-xs text-gray-500">Use your backend admin credentials</p>
-              <p className="text-xs text-gray-500">Endpoint: POST /login</p>
+              <p className="text-xs text-gray-500">To test the backend, use the following credentials:</p>
+              <p className="text-xs text-gray-500">Email: test@gmail.com</p>
+              <p className="text-xs text-gray-500">Password: 123456</p>
             </div>
           </CardContent>
         </Card>

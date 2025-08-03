@@ -298,6 +298,13 @@ export default function RoomsPage() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center h-16">
             <div className="flex items-center">
+              <Image
+                src="/logo.png"
+                alt="LuxuryStay Logo"
+                width={130}
+                height={130}
+                className="mr-3 rounded-lg"
+              />
               <Link href="/" className="text-2xl font-bold text-gray-900">
                 LuxuryStay Hotel
               </Link>

@@ -10,9 +10,11 @@ import { Label } from "@/components/ui/label"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Badge } from "@/components/ui/badge"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { User, Upload, Calendar, Mail, Phone, MapPin, Edit } from "lucide-react"
+import { User, Upload, Calendar, Mail, Phone, MapPin, Edit, RefreshCw } from "lucide-react"
 import { useRouter } from "next/navigation"
 import { toast } from "sonner"
+import { userService } from "@/lib/user-service"
+import Image from "next/image"
 
 interface CustomerData {
   name: string
@@ -21,6 +23,7 @@ interface CustomerData {
   address?: string
   dateOfBirth?: string
   profileImage?: string
+  isLoadingImage?: boolean
 }
 
 interface Booking {
@@ -78,17 +81,25 @@ export default function CustomerProfile() {
         console.log('Profile page - customerInfo:', customerInfo)
         setCustomerData(customerInfo)
         setEditData(customerInfo)
+        
+        // Fetch profile picture from API if we have an email
+        if (customerInfo.email) {
+          fetchProfileImage(customerInfo.email)
+        }
       } else {
         console.log('Profile page - no userDetails, using fallback')
         // Fallback to basic data
-        setCustomerData({
+        const fallbackData = {
           name: data.username || "",
           email: data.username || "",
-        })
-        setEditData({
-          name: data.username || "",
-          email: data.username || "",
-        })
+        }
+        setCustomerData(fallbackData)
+        setEditData(fallbackData)
+        
+        // Try to fetch profile picture for fallback data
+        if (fallbackData.email) {
+          fetchProfileImage(fallbackData.email)
+        }
       }
     } else {
       console.log('Profile page - no stored data found')
@@ -136,6 +147,20 @@ export default function CustomerProfile() {
     }
   }, [router])
 
+  const fetchProfileImage = async (email: string) => {
+    try {
+      setCustomerData(prev => ({ ...prev, isLoadingImage: true }))
+      const imageUrl = await userService.getUserProfileImage(email)
+      setCustomerData(prev => ({ ...prev, profileImage: imageUrl, isLoadingImage: false }))
+      setEditData(prev => ({ ...prev, profileImage: imageUrl }))
+    } catch (error) {
+      console.error('Error fetching profile image:', error)
+      setCustomerData(prev => ({ ...prev, isLoadingImage: false }))
+      toast.error("Failed to load profile picture. Using placeholder image.")
+      // Keep the existing profile image or use placeholder
+    }
+  }
+
   const handleUpdateProfile = async () => {
     // Validation
     if (!editData.name || !editData.email) {
@@ -166,9 +191,13 @@ export default function CustomerProfile() {
   const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
     if (file) {
-      // Here you would upload the image and get the URL
+      // Create a preview URL for immediate display
       const imageUrl = URL.createObjectURL(file)
       setEditData({ ...editData, profileImage: imageUrl })
+      
+      // Here you would typically upload the image to your backend
+      // For now, we'll just show the preview
+      toast.success("Profile picture updated! (Note: This is a preview - actual upload would require backend integration)")
     }
   }
 
@@ -209,7 +238,16 @@ export default function CustomerProfile() {
       <header className="bg-white shadow-sm border-b">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center h-16">
-            <h1 className="text-2xl font-bold text-gray-900">My Profile</h1>
+            <div className="flex items-center">
+              <Image
+                src="/logo.png"
+                alt="LuxuryStay Logo"
+                width={130}
+                height={130}
+                className="mr-3 rounded-lg"
+              />
+              <h1 className="text-2xl font-bold text-gray-900">My Profile</h1>
+            </div>
             <div className="flex items-center space-x-4">
               <Button variant="outline" onClick={() => router.push("/")}>
                 Back to Home
@@ -241,88 +279,124 @@ export default function CustomerProfile() {
                 </div>
               </CardHeader>
               <CardContent className="space-y-6">
-                <div className="flex items-center space-x-4">
-                  <Avatar className="h-20 w-20">
-                    <AvatarImage src={customerData.profileImage || "/placeholder.svg"} />
-                    <AvatarFallback>
-                      <User className="h-8 w-8" />
-                    </AvatarFallback>
-                  </Avatar>
-                  {isEditing && (
-                    <div>
-                      <Input
-                        type="file"
-                        accept="image/*"
-                        onChange={handleImageUpload}
-                        className="hidden"
-                        id="profileImageUpload"
+                <div className="flex flex-col items-center space-y-3">
+                  <div className="relative">
+                    <Avatar className="h-24 w-24 md:h-28 md:w-28 border-3 border-white shadow-md">
+                      <AvatarImage 
+                        src={customerData.profileImage || "/placeholder-user.jpg"} 
+                        alt={`${customerData.name}'s profile picture`}
+                        className={`object-cover ${customerData.isLoadingImage ? "animate-pulse" : ""}`}
                       />
-                      <Button variant="outline" onClick={() => document.getElementById("profileImageUpload")?.click()}>
-                        <Upload className="h-4 w-4 mr-2" />
-                        Change Photo
-                      </Button>
-                    </div>
-                  )}
+                      <AvatarFallback className="text-2xl md:text-3xl">
+                        {customerData.isLoadingImage ? (
+                          <div className="animate-spin rounded-full h-8 w-8 md:h-10 md:w-10 border-b-2 border-gray-900"></div>
+                        ) : (
+                          <User className="h-8 w-8 md:h-10 md:w-10" />
+                        )}
+                      </AvatarFallback>
+                    </Avatar>
+                  </div>
+                  <div className="text-center">
+                    <h2 className="text-lg font-semibold text-gray-900 mb-1">{customerData.name}</h2>
+                    <p className="text-sm text-gray-600 mb-3">{customerData.email}</p>
+                  </div>
+                  <div className="flex flex-col sm:flex-row space-y-2 sm:space-y-0 sm:space-x-2">
+                    {isEditing && (
+                      <>
+                        <Input
+                          type="file"
+                          accept="image/*"
+                          onChange={handleImageUpload}
+                          className="hidden"
+                          id="profileImageUpload"
+                        />
+                        <Button variant="outline" size="sm" onClick={() => document.getElementById("profileImageUpload")?.click()}>
+                          <Upload className="h-3 w-3 mr-1" />
+                          Change Photo
+                        </Button>
+                      </>
+                    )}
+                    <Button 
+                      variant="outline" 
+                      size="sm"
+                      onClick={() => customerData.email && fetchProfileImage(customerData.email)}
+                      disabled={customerData.isLoadingImage}
+                    >
+                      <RefreshCw className={`h-3 w-3 mr-1 ${customerData.isLoadingImage ? 'animate-spin' : ''}`} />
+                      Refresh
+                    </Button>
+                  </div>
                 </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div>
-                    <Label htmlFor="name">Full Name</Label>
-                    <Input
-                      id="name"
-                      value={isEditing ? editData.name : customerData.name}
-                      onChange={(e) => setEditData({ ...editData, name: e.target.value })}
-                      disabled={!isEditing}
-                    />
+                <div className="space-y-4">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <Label htmlFor="name" className="text-sm font-medium">Full Name</Label>
+                      <Input
+                        id="name"
+                        value={isEditing ? editData.name : customerData.name}
+                        onChange={(e) => setEditData({ ...editData, name: e.target.value })}
+                        disabled={!isEditing}
+                        className="h-9 text-sm"
+                      />
+                    </div>
+                    <div>
+                      <Label htmlFor="email" className="text-sm font-medium">Email Address</Label>
+                      <Input
+                        id="email"
+                        type="email"
+                        value={isEditing ? editData.email : customerData.email}
+                        onChange={(e) => setEditData({ ...editData, email: e.target.value })}
+                        disabled={!isEditing}
+                        className="h-9 text-sm"
+                      />
+                    </div>
                   </div>
-                  <div>
-                    <Label htmlFor="email">Email Address</Label>
-                    <Input
-                      id="email"
-                      type="email"
-                      value={isEditing ? editData.email : customerData.email}
-                      onChange={(e) => setEditData({ ...editData, email: e.target.value })}
-                      disabled={!isEditing}
-                    />
+                  
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <Label htmlFor="number" className="text-sm font-medium">Phone Number</Label>
+                      <Input
+                        id="number"
+                        value={isEditing ? editData.number || "" : customerData.number || ""}
+                        onChange={(e) => setEditData({ ...editData, number: e.target.value })}
+                        disabled={!isEditing}
+                        placeholder="Enter your phone number"
+                        className="h-9 text-sm"
+                      />
+                    </div>
+                    <div>
+                      <Label htmlFor="dateOfBirth" className="text-sm font-medium">Date of Birth</Label>
+                      <Input
+                        id="dateOfBirth"
+                        type="date"
+                        value={isEditing ? editData.dateOfBirth || "" : customerData.dateOfBirth || ""}
+                        onChange={(e) => setEditData({ ...editData, dateOfBirth: e.target.value })}
+                        disabled={!isEditing}
+                        className="h-9 text-sm"
+                      />
+                    </div>
                   </div>
+                  
                   <div>
-                    <Label htmlFor="number">Phone Number</Label>
-                    <Input
-                      id="number"
-                      value={isEditing ? editData.number || "" : customerData.number || ""}
-                      onChange={(e) => setEditData({ ...editData, number: e.target.value })}
-                      disabled={!isEditing}
-                      placeholder="Enter your phone number"
-                    />
-                  </div>
-                  <div>
-                    <Label htmlFor="dateOfBirth">Date of Birth</Label>
-                    <Input
-                      id="dateOfBirth"
-                      type="date"
-                      value={isEditing ? editData.dateOfBirth || "" : customerData.dateOfBirth || ""}
-                      onChange={(e) => setEditData({ ...editData, dateOfBirth: e.target.value })}
-                      disabled={!isEditing}
-                    />
-                  </div>
-                  <div className="md:col-span-2">
-                    <Label htmlFor="address">Address</Label>
+                    <Label htmlFor="address" className="text-sm font-medium">Address</Label>
                     <Input
                       id="address"
                       value={isEditing ? editData.address || "" : customerData.address || ""}
                       onChange={(e) => setEditData({ ...editData, address: e.target.value })}
                       disabled={!isEditing}
                       placeholder="Enter your address"
+                      className="h-9 text-sm"
                     />
                   </div>
                 </div>
 
                 {isEditing && (
-                  <div className="flex justify-end space-x-2">
-                    <Button variant="outline" onClick={() => setIsEditing(false)}>
+                  <div className="flex justify-end space-x-2 pt-2">
+                    <Button variant="outline" size="sm" onClick={() => setIsEditing(false)}>
                       Cancel
                     </Button>
-                    <Button onClick={handleUpdateProfile}>Save Changes</Button>
+                    <Button size="sm" onClick={handleUpdateProfile}>Save Changes</Button>
                   </div>
                 )}
 

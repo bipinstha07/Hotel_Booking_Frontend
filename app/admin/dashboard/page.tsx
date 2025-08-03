@@ -1073,7 +1073,16 @@ export default function AdminDashboard() {
       <header className="bg-white shadow-sm border-b">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center h-16">
-            <h1 className="text-2xl font-bold text-gray-900">Admin Dashboard</h1>
+            <div className="flex items-center">
+              <Image
+                src="/logo.png"
+                alt="LuxuryStay Logo"
+                width={130}
+                height={130}
+                className="mr-3 rounded-lg"
+              />
+              <h1 className="text-2xl font-bold text-gray-900">Admin Dashboard</h1>
+            </div>
             <div className="flex items-center space-x-4">
               <Button variant="outline" onClick={handleLogout}>
                 Logout
