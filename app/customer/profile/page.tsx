@@ -10,7 +10,7 @@ import { Label } from "@/components/ui/label"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Badge } from "@/components/ui/badge"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { User, Upload, Calendar, Mail, Phone, MapPin, Edit, RefreshCw } from "lucide-react"
+import { User, Upload, Calendar, Mail, Phone, MapPin, Edit, RefreshCw, RotateCcw } from "lucide-react"
 import { useRouter } from "next/navigation"
 import { toast } from "sonner"
 import { userService } from "@/lib/user-service"
@@ -33,6 +33,8 @@ interface Booking {
   checkOutDate: string
   totalPrice: number
   status: string
+  paymentStatus?: string
+  paymentIntentId?: string
   bookingCreated: string
 }
 
@@ -42,6 +44,7 @@ export default function CustomerProfile() {
     email: "",
   })
   const [bookings, setBookings] = useState<Booking[]>([])
+  const [isLoadingBookings, setIsLoadingBookings] = useState(false)
   const [isEditing, setIsEditing] = useState(false)
   const [editData, setEditData] = useState<CustomerData>({
     name: "",
@@ -112,7 +115,7 @@ export default function CustomerProfile() {
       if (data.bookings && Array.isArray(data.bookings)) {
         const actualBookings: Booking[] = data.bookings.map((booking: any) => ({
           id: booking.id || Math.random(),
-          roomType: booking.roomEntity?.roomType || "UNKNOWN",
+          roomType: booking.roomType || booking.roomEntity?.roomType || "UNKNOWN",
           checkInDate: booking.checkInDate || "",
           checkOutDate: booking.checkOutDate || "",
           totalPrice: booking.totalPrice || 0,
@@ -158,6 +161,70 @@ export default function CustomerProfile() {
       setCustomerData(prev => ({ ...prev, isLoadingImage: false }))
       toast.error("Failed to load profile picture. Using placeholder image.")
       // Keep the existing profile image or use placeholder
+    }
+  }
+
+  const refreshBookings = async () => {
+    if (!customerData.email) {
+      toast.error("User email not found")
+      return
+    }
+
+    try {
+      setIsLoadingBookings(true)
+      const customerToken = localStorage.getItem("customerToken")
+      
+      if (!customerToken) {
+        toast.error("Authentication required")
+        return
+      }
+
+      const response = await fetch(`http://localhost:8080/user/${customerData.email}/booking`, {
+        method: 'GET',
+        headers: {
+          'Authorization': `Bearer ${customerToken}`,
+          'Content-Type': 'application/json',
+        },
+      })
+
+      if (response.ok) {
+        const apiBookings = await response.json()
+        
+        // Transform API bookings to match our interface
+        const transformedBookings: Booking[] = apiBookings.map((booking: any) => ({
+          id: booking.id || Math.random(),
+          roomType: booking.roomType || booking.roomEntity?.roomType || "UNKNOWN",
+          checkInDate: booking.checkInDate || "",
+          checkOutDate: booking.checkOutDate || "",
+          totalPrice: booking.totalPrice || 0,
+          status: booking.bookingStatus || "PENDING",
+          bookingCreated: booking.bookingCreated || "",
+        }))
+
+        setBookings(transformedBookings)
+        
+        // Update localStorage with fresh booking data
+        const storedData = localStorage.getItem("customerData")
+        if (storedData) {
+          const data = JSON.parse(storedData)
+          const updatedData = {
+            ...data,
+            bookings: apiBookings
+          }
+          localStorage.setItem("customerData", JSON.stringify(updatedData))
+        }
+
+        toast.success(`Refreshed! Found ${transformedBookings.length} booking(s)`)
+        console.log('Bookings refreshed:', transformedBookings)
+      } else {
+        const errorData = await response.json()
+        toast.error(`Failed to refresh bookings: ${errorData.message || 'Unknown error'}`)
+      }
+    } catch (error) {
+      console.error('Error refreshing bookings:', error)
+      toast.error("Failed to refresh bookings. Please try again.")
+    } finally {
+      setIsLoadingBookings(false)
     }
   }
 
@@ -208,15 +275,51 @@ export default function CustomerProfile() {
   }
 
   const getStatusColor = (status: string) => {
-    switch (status) {
-      case "Confirmed":
+    switch (status?.toUpperCase()) {
+      case "PENDING":
+        return "bg-yellow-500"
+      case "APPROVED":
+      case "CONFIRMED":
         return "bg-green-500"
-      case "Completed":
-        return "bg-blue-500"
-      case "Cancelled":
+      case "CANCELLED":
+      case "CANCEL":
         return "bg-red-500"
+      case "COMPLETED":
+        return "bg-blue-500"
+      case "DELETED":
+        return "bg-gray-500"
       default:
         return "bg-gray-500"
+    }
+  }
+
+  const getPaymentStatusColor = (status: string) => {
+    switch (status?.toUpperCase()) {
+      case "CONFIRMED":
+        return "bg-green-500"
+      case "PENDING":
+        return "bg-yellow-500"
+      case "FAILED":
+        return "bg-red-500"
+      case "PROCESSING":
+        return "bg-blue-500"
+      default:
+        return "bg-gray-500"
+    }
+  }
+
+  const getStatusBorderColor = (status: string) => {
+    switch (status?.toUpperCase()) {
+      case "CONFIRMED":
+        return "border-l-green-500"
+      case "PENDING":
+        return "border-l-yellow-500"
+      case "CANCELLED":
+        return "border-l-red-500"
+      case "COMPLETED":
+        return "border-l-blue-500"
+      default:
+        return "border-l-gray-400"
     }
   }
 
@@ -260,7 +363,7 @@ export default function CustomerProfile() {
         </div>
       </header>
 
-      <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <Tabs defaultValue="profile" className="w-full">
           <TabsList className="grid w-full grid-cols-2">
             <TabsTrigger value="profile">Profile</TabsTrigger>
@@ -433,10 +536,26 @@ export default function CustomerProfile() {
           <TabsContent value="bookings">
             <Card>
               <CardHeader>
-                <CardTitle>My Bookings</CardTitle>
+                <div className="flex justify-between items-center">
+                  <CardTitle>My Bookings</CardTitle>
+                  <Button 
+                    variant="outline" 
+                    size="sm"
+                    onClick={refreshBookings}
+                    disabled={isLoadingBookings}
+                  >
+                    <RotateCcw className={`h-4 w-4 mr-2 ${isLoadingBookings ? 'animate-spin' : ''}`} />
+                    {isLoadingBookings ? "Refreshing..." : "Refresh Bookings"}
+                  </Button>
+                </div>
               </CardHeader>
               <CardContent>
-                {bookings.length === 0 ? (
+                {isLoadingBookings ? (
+                  <div className="text-center py-8">
+                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-4"></div>
+                    <p className="text-gray-500">Refreshing bookings...</p>
+                  </div>
+                ) : bookings.length === 0 ? (
                   <div className="text-center py-8">
                     <p className="text-gray-500">No bookings found</p>
                     <Button className="mt-4" onClick={() => router.push("/")}>
@@ -444,44 +563,118 @@ export default function CustomerProfile() {
                     </Button>
                   </div>
                 ) : (
-                  <div className="space-y-4">
+                  <div className="space-y-3">
                     {bookings.map((booking) => (
-                      <Card key={booking.id} className="border-l-4 border-l-blue-500">
-                        <CardContent className="p-4">
-                          <div className="flex justify-between items-start mb-4">
-                            <div>
-                              <h3 className="font-semibold text-lg">
-                                {roomTypeLabels[booking.roomType as keyof typeof roomTypeLabels]}
-                              </h3>
-                              <p className="text-sm text-gray-600">Booking ID: #{booking.id}</p>
+                      <Card key={booking.id} className={`hover:shadow-xl transition-all duration-300 border-l-4 ${getStatusBorderColor(booking.status)}`}>
+                        <CardContent className="p-6">
+                          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                            {/* Column 1: Room & Booking Info */}
+                            <div className="space-y-3">
+                              <div className="flex items-center gap-3">
+                                <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full flex items-center justify-center">
+                                  <span className="text-white font-semibold text-sm">
+                                    {(roomTypeLabels[booking.roomType as keyof typeof roomTypeLabels] || booking.roomType || 'R').charAt(0)}
+                                  </span>
+                                </div>
+                                <div className="flex-1">
+                                  <h3 className="font-bold text-base text-gray-900">
+                                    {roomTypeLabels[booking.roomType as keyof typeof roomTypeLabels] || booking.roomType || 'Room'}
+                                  </h3>
+                                  <p className="text-sm text-gray-600">Booking ID: #{booking.id}</p>
+                                </div>
+                                <Badge className={getStatusColor(booking.status)}>{booking.status}</Badge>
+                              </div>
+                              <div className="bg-gradient-to-r from-gray-50 to-slate-50 p-3 rounded-lg">
+                                <div className="flex items-center gap-2 mb-2">
+                                  <svg className="w-4 h-4 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                  </svg>
+                                  <span className="text-xs font-medium text-gray-700">Booked on</span>
+                                </div>
+                                <p className="text-sm text-gray-700">{new Date(booking.bookingCreated).toLocaleDateString()}</p>
+                              </div>
                             </div>
-                            <Badge className={getStatusColor(booking.status)}>{booking.status}</Badge>
-                          </div>
 
-                          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
-                            <div>
-                              <Label className="text-sm font-medium text-gray-500">Check-in</Label>
-                              <p className="font-medium">{new Date(booking.checkInDate).toLocaleDateString()}</p>
+                            {/* Column 2: Dates */}
+                            <div className="space-y-3">
+                              <div className="bg-gradient-to-r from-blue-50 to-indigo-50 p-3 rounded-lg">
+                                <div className="flex items-center gap-2 mb-2">
+                                  <svg className="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                                  </svg>
+                                  <span className="font-semibold text-sm text-gray-900">Stay Details</span>
+                                </div>
+                                <div className="space-y-2">
+                                  <div>
+                                    <span className="text-xs font-medium text-gray-600">Check-in:</span>
+                                    <p className="text-sm font-semibold text-gray-900">{new Date(booking.checkInDate).toLocaleDateString()}</p>
+                                  </div>
+                                  <div>
+                                    <span className="text-xs font-medium text-gray-600">Check-out:</span>
+                                    <p className="text-sm font-semibold text-gray-900">{new Date(booking.checkOutDate).toLocaleDateString()}</p>
+                                  </div>
+                                </div>
+                              </div>
                             </div>
-                            <div>
-                              <Label className="text-sm font-medium text-gray-500">Check-out</Label>
-                              <p className="font-medium">{new Date(booking.checkOutDate).toLocaleDateString()}</p>
-                            </div>
-                            <div>
-                              <Label className="text-sm font-medium text-gray-500">Total Amount</Label>
-                              <p className="font-medium text-green-600">₹{booking.totalPrice}</p>
-                            </div>
-                          </div>
 
-                          <div className="flex justify-between items-center">
-                            <p className="text-sm text-gray-500">
-                              Booked on {new Date(booking.bookingCreated).toLocaleDateString()}
-                            </p>
-                            {booking.status === "Confirmed" && (
-                              <Button variant="outline" size="sm">
-                                View Details
-                              </Button>
-                            )}
+                            {/* Column 3: Payment & Total */}
+                            <div className="space-y-3">
+                              <div className="bg-gradient-to-r from-green-50 to-emerald-50 p-3 rounded-lg">
+                                <div className="flex items-center gap-2 mb-2">
+                                  <svg className="w-5 h-5 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                  </svg>
+                                  <span className="font-semibold text-sm text-gray-900">Payment</span>
+                                </div>
+                                <div className="space-y-2">
+                                  <div className="text-center">
+                                    <span className="text-xs font-medium text-gray-600">Total Amount</span>
+                                    <p className="text-xl font-bold text-green-600">${booking.totalPrice}</p>
+                                  </div>
+                                  {booking.paymentStatus && (
+                                    <div className="text-center">
+                                      <span className="text-xs font-medium text-gray-600">Status</span>
+                                      <div className="flex justify-center mt-1">
+                                        <Badge className={getPaymentStatusColor(booking.paymentStatus)}>
+                                          {booking.paymentStatus}
+                                        </Badge>
+                                      </div>
+                                    </div>
+                                  )}
+                                </div>
+                              </div>
+                              {booking.paymentIntentId && (
+                                <div className="bg-gray-50 p-3 rounded-lg">
+                                  <div className="flex items-center gap-2 mb-2">
+                                    <svg className="w-4 h-4 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V8a2 2 0 00-2-2h-5m-4 0V4a2 2 0 114 0v2m-4 0a2 2 0 104 0m-5 8a2 2 0 100-4 2 2 0 000 4zm0 0c1.306 0 2.417.835 2.83 2M9 14a3.001 3.001 0 00-2.83 2M15 11h3m-3 4h2" />
+                                    </svg>
+                                    <span className="text-xs font-medium text-gray-700">Payment ID</span>
+                                  </div>
+                                  <p className="text-xs text-gray-600 font-mono break-all">{booking.paymentIntentId}</p>
+                                </div>
+                              )}
+                            </div>
+
+                            {/* Column 4: Actions */}
+                            <div className="space-y-3">
+                              <div className="bg-gradient-to-r from-orange-50 to-red-50 p-3 rounded-lg">
+                                <div className="flex items-center gap-2 mb-2">
+                                  <svg className="w-5 h-5 text-orange-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                                  </svg>
+                                  <span className="font-semibold text-sm text-gray-900">Actions</span>
+                                </div>
+                                <div className="flex justify-center">
+                                  {booking.status === "Confirmed" && (
+                                    <Button variant="outline" size="sm" className="text-xs">
+                                      View Details
+                                    </Button>
+                                  )}
+                                </div>
+                              </div>
+                            </div>
                           </div>
                         </CardContent>
                       </Card>

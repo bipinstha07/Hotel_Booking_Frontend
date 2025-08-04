@@ -6,18 +6,29 @@ export interface BookingDto {
   roomId: string;
   checkInDate: string;
   checkOutDate: string;
-  guestCount: number;
+  numberOfGuest: number;
+  notes?: string;
+  phoneNumber?: number;
   totalPrice: number;
   status: 'pending' | 'confirmed' | 'cancelled';
   createdAt?: string;
   updatedAt?: string;
+  customerEmail?: string;
+  customerName?: string;
+  bookingStatus?: string;
+  paymentStatus?: string;
+}
+
+export interface PaymentResponse {
+  clientSecret: string;
+  bookingId: string;
 }
 
 export class BookingService {
   private baseUrl = 'http://localhost:8080/user/booking';
 
-  // Create a new booking
-  async createBooking(bookingDto: Omit<BookingDto, 'id' | 'status' | 'createdAt' | 'updatedAt'>): Promise<BookingDto> {
+  // Create a new booking with Stripe payment intent
+  async createBooking(bookingDto: Omit<BookingDto, 'id' | 'status' | 'createdAt' | 'updatedAt' | 'bookingStatus' | 'paymentStatus'>): Promise<PaymentResponse> {
     const response = await fetch(`${this.baseUrl}/create`, {
       method: 'POST',
       headers: {
@@ -28,10 +39,41 @@ export class BookingService {
 
     if (!response.ok) {
       const error = await response.json();
-      throw new Error(error.error || 'Failed to create booking');
+      console.error('Backend error response:', error);
+      // Use the exact error message from backend
+      throw new Error(error.message || 'Failed to create booking');
     }
 
-    return response.json();
+    const responseData = await response.json();
+    console.log('Backend response:', responseData);
+    
+    // Handle the response format from your backend
+    return {
+      clientSecret: responseData.clientSecret,
+      bookingId: responseData.bookingId,
+    };
+  }
+
+  // Confirm payment after successful Stripe payment
+  async confirmPayment(paymentIntentId: string): Promise<string> {
+    const response = await fetch(`${this.baseUrl}/confirm`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ paymentIntentId }),
+    });
+
+    if (!response.ok) {
+      const error = await response.json();
+      console.error('Payment confirmation error:', error);
+      // Use the exact error message from backend
+      throw new Error(error.message || 'Failed to confirm payment');
+    }
+
+    const result = await response.text();
+    console.log('Payment confirmation result:', result);
+    return result;
   }
 
   // Get all bookings with optional filters

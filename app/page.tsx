@@ -17,6 +17,8 @@ import Image from "next/image"
 import Link from "next/link"
 import { toast } from "sonner"
 import { userService } from "@/lib/user-service"
+import { bookingService } from "@/lib/booking-service"
+import PaymentForm from "@/components/payment-form"
 
 interface Room {
   id: number
@@ -121,6 +123,8 @@ export default function HomePage() {
   const [guests, setGuests] = useState(1)
   const [bookingGuests, setBookingGuests] = useState(1)
   const [selectedRoom, setSelectedRoom] = useState<Room | null>(null)
+  const [bookingDialogOpen, setBookingDialogOpen] = useState(false)
+  const [currentBookingRoom, setCurrentBookingRoom] = useState<Room | null>(null)
   const [selectedRoomType, setSelectedRoomType] = useState("all")
   const [priceRange, setPriceRange] = useState({ min: "", max: "" })
   const [bookingData, setBookingData] = useState({
@@ -134,6 +138,12 @@ export default function HomePage() {
   const [profileImage, setProfileImage] = useState<string>("")
   const [isLoadingProfileImage, setIsLoadingProfileImage] = useState(false)
   const [mounted, setMounted] = useState(false)
+  const [showPayment, setShowPayment] = useState(false)
+  const [paymentData, setPaymentData] = useState<any>(null)
+  const [selectedRoomForPayment, setSelectedRoomForPayment] = useState<Room | null>(null)
+  const [bookingDataForPayment, setBookingDataForPayment] = useState<any>(null)
+  const [bookingError, setBookingError] = useState<string | null>(null)
+  const [isBookingLoading, setIsBookingLoading] = useState(false)
 
   // Background images for hero slider - memoized to prevent recreation
   const heroImages = useMemo(() => [
@@ -300,9 +310,50 @@ export default function HomePage() {
     window.location.reload()
   }
 
+  const handlePaymentSuccess = () => {
+    setShowPayment(false)
+    setPaymentData(null)
+    setSelectedRoomForPayment(null)
+    setBookingData({ customerName: "", customerEmail: "", phone: "", notes: "" })
+    setCheckInDate(undefined)
+    setCheckOutDate(undefined)
+    setBookingGuests(1)
+    setBookingError(null) // Clear any errors
+    
+    toast.success('Payment successful! Your booking has been confirmed.', {
+      description: 'You will receive a confirmation email shortly.',
+    })
+  }
+
+  const handlePaymentCancel = () => {
+    setShowPayment(false)
+    setPaymentData(null)
+    setSelectedRoomForPayment(null)
+    setBookingError(null) // Clear any errors
+    
+    toast.info('Payment cancelled. You can try booking again.', {
+      description: 'Your booking was not confirmed.',
+    })
+  }
+
   const handleBooking = async (room: Room) => {
+    const roomToBook = currentBookingRoom || room
     if (!checkInDate || !checkOutDate) {
       toast.error("Please select check-in and check-out dates")
+      return
+    }
+
+    // Validate dates are in the future
+    const today = new Date()
+    today.setHours(0, 0, 0, 0)
+    
+    if (checkInDate < today) {
+      toast.error("Check-in date must be in the future")
+      return
+    }
+    
+    if (checkOutDate <= checkInDate) {
+      toast.error("Check-out date must be after check-in date")
       return
     }
 
@@ -313,40 +364,78 @@ export default function HomePage() {
     }
 
     const days = Math.ceil((checkOutDate.getTime() - checkInDate.getTime()) / (1000 * 60 * 60 * 24))
-    const totalPrice = days * room.pricePerNight
+    const totalPrice = days * roomToBook.pricePerNight
 
-    const booking = {
+    const bookingDataToSend = {
       customerName: customerData?.userDetails?.name || bookingData.customerName,
       customerEmail: customerData?.userDetails?.email || bookingData.customerEmail,
-      phoneNumber: customerData?.userDetails?.number || bookingData.phone,
+      userId: customerData?.userDetails?.id || 'user123',
+      roomId: roomToBook.id.toString(),
       checkInDate: format(checkInDate, "yyyy-MM-dd"),
       checkOutDate: format(checkOutDate, "yyyy-MM-dd"),
       numberOfGuest: bookingGuests,
-      totalPrice,
-      notes: bookingData.notes,
-      roomId: room.id.toString(),
+      notes: bookingData.notes || "",
+      phoneNumber: bookingData.phone ? parseInt(bookingData.phone.replace(/\D/g, '')) : undefined,
+      totalPrice: Math.round(totalPrice * 100), // Convert to cents for Stripe
     }
 
+    console.log('Sending booking data:', bookingDataToSend)
+    console.log('Check-in date:', checkInDate)
+    console.log('Check-out date:', checkOutDate)
+    console.log('Today:', today)
+
+    setIsBookingLoading(true)
+    setBookingError(null)
+
+    // Immediately close booking form and show payment
+    setSelectedRoom(null) // Close the booking dialog
+    setSelectedRoomForPayment(room)
+    
     try {
-      const response = await fetch('http://localhost:8080/user/booking/create', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(booking),
-      })
+      console.log('Creating booking with data:', bookingDataToSend)
       
-      if (response.ok) {
-        toast.success(`Booking confirmed! Total: $${totalPrice}`)
-        setSelectedRoom(null)
-        setBookingData({ customerName: "", customerEmail: "", phone: "", notes: "" })
-      } else {
-        const errorData = await response.json()
-        toast.error(`Booking failed: ${errorData.message || 'Unknown error'}`)
+      const paymentResponse = await bookingService.createBooking(bookingDataToSend)
+      console.log('Payment response received:', paymentResponse)
+      
+      // Store booking data for payment before clearing
+      const bookingDataForPayment = {
+        checkInDate,
+        checkOutDate,
+        bookingGuests,
+        room: roomToBook
       }
+      
+      // Close booking dialog and clear form data
+      setBookingDialogOpen(false)
+      setSelectedRoom(null)
+      setCurrentBookingRoom(null)
+      setBookingData({ customerName: "", customerEmail: "", phone: "", notes: "" })
+      setCheckInDate(undefined)
+      setCheckOutDate(undefined)
+      setBookingGuests(1)
+      setBookingError(null)
+      
+      // Set payment data
+      setPaymentData(paymentResponse)
+      setSelectedRoomForPayment(bookingDataForPayment.room)
+      setBookingDataForPayment(bookingDataForPayment)
+      setShowPayment(true)
+      
+      toast.success('Booking created! Please complete payment.', {
+        description: `Booking ID: ${paymentResponse.bookingId}`,
+      })
     } catch (error) {
       console.error('Error creating booking:', error)
-      toast.error('Failed to create booking. Please try again.')
+      // Show the exact backend error message
+      const errorMessage = error instanceof Error ? error.message : 'Failed to create booking. Please try again.'
+      setBookingError(errorMessage)
+      setShowPayment(false) // Hide payment form if booking failed
+      setSelectedRoomForPayment(null)
+      toast.error('Booking Failed', {
+        description: errorMessage,
+      })
+    } finally {
+      setIsBookingLoading(false)
     }
   }
 
@@ -429,6 +518,7 @@ export default function HomePage() {
                   </Link>
                 </>
               )}
+
             </nav>
           </div>
         </div>
@@ -591,181 +681,261 @@ export default function HomePage() {
                   ))}
                 </div>
                 <div className="mt-auto">
-                  <Dialog>
+                  <Dialog open={bookingDialogOpen && currentBookingRoom?.id === room.id} onOpenChange={(open) => {
+                    if (!open) {
+                      setBookingDialogOpen(false)
+                      setCurrentBookingRoom(null)
+                    }
+                  }}>
                     <DialogTrigger asChild>
-                      <Button className="w-full" onClick={() => setSelectedRoom(room)}>
+                      <Button className="w-full" onClick={() => {
+                        setCurrentBookingRoom(room)
+                        setSelectedRoom(room)
+                        setBookingDialogOpen(true)
+                      }}>
                         Book Now
                       </Button>
                     </DialogTrigger>
-                  <DialogContent className="max-w-md">
-                    <DialogHeader>
-                      <DialogTitle>Book {roomTypes[room.roomType as keyof typeof roomTypes]}</DialogTitle>
+                  <DialogContent className="max-w-4xl max-h-[90vh] overflow-hidden">
+                    <DialogHeader className="flex-shrink-0">
+                      <DialogTitle>Book {roomTypes[currentBookingRoom?.roomType as keyof typeof roomTypes]}</DialogTitle>
                     </DialogHeader>
-                    <div className="space-y-4">
-                      {customerData ? (
-                        // Show logged-in user info (read-only)
-                        <div className="space-y-4">
-                          <div className="bg-green-50 p-4 rounded-lg border border-green-200">
-                            <div className="flex items-center space-x-2 mb-2">
-                              <div className="w-2 h-2 bg-green-500 rounded-full"></div>
-                              <span className="text-sm font-medium text-green-800">Logged in as: {customerData.userDetails?.name || customerData.username}</span>
+                    <div className="grid grid-cols-1 p-3 lg:grid-cols-2 gap-8 overflow-y-auto max-h-[calc(90vh-120px)] pr-2">
+                      {/* Left Column - Booking Form */}
+                      <div className="space-y-4">
+                        {customerData ? (
+                          // Show logged-in user info (read-only)
+                          <div className="space-y-4">
+                            <div className="bg-green-50 p-4 rounded-lg border border-green-200">
+                              <div className="flex items-center space-x-2 mb-2">
+                                <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+                                <span className="text-sm font-medium text-green-800">Logged in as: {customerData.userDetails?.name || customerData.username}</span>
+                              </div>
+                              <div className="text-sm text-green-700">
+                                <p>Email: {customerData.userDetails?.email || customerData.username}</p>
+                                {customerData.userDetails?.number && (
+                                  <p>Phone: {customerData.userDetails?.number}</p>
+                                )}
+                              </div>
                             </div>
-                            <div className="text-sm text-green-700">
-                              <p>Email: {customerData.userDetails?.email || customerData.username}</p>
-                              {customerData.userDetails?.number && (
-                                <p>Phone: {customerData.userDetails?.number}</p>
-                              )}
+                          </div>
+                        ) : (
+                          // Show manual input fields for non-logged-in users
+                          <>
+                            <div>
+                              <Label htmlFor="customerName">Full Name *</Label>
+                              <Input
+                                id="customerName"
+                                value={bookingData.customerName}
+                                onChange={(e) => setBookingData({ ...bookingData, customerName: e.target.value })}
+                                placeholder="Enter your full name"
+                              />
                             </div>
-                           
+                            <div>
+                              <Label htmlFor="customerEmail">Email *</Label>
+                              <Input
+                                id="customerEmail"
+                                type="email"
+                                value={bookingData.customerEmail}
+                                onChange={(e) => setBookingData({ ...bookingData, customerEmail: e.target.value })}
+                                placeholder="Enter your email"
+                              />
+                            </div>
+                            <div>
+                              <Label htmlFor="phone">Phone Number</Label>
+                              <Input
+                                id="phone"
+                                value={bookingData.phone}
+                                onChange={(e) => setBookingData({ ...bookingData, phone: e.target.value })}
+                                placeholder="Enter your phone number"
+                              />
+                            </div>
+                          </>
+                        )}
+                        
+                        {/* Check-in and Check-out Dates */}
+                        <div className="grid grid-cols-2 gap-4">
+                          <div>
+                            <Label htmlFor="checkIn">Check-in Date *</Label>
+                            <Popover>
+                              <PopoverTrigger asChild>
+                                <Button variant="outline" className="w-full justify-start text-left font-normal">
+                                  <CalendarIcon className="mr-2 h-4 w-4" />
+                                  {checkInDate ? format(checkInDate, "PPP") : "Select date"}
+                                </Button>
+                              </PopoverTrigger>
+                              <PopoverContent className="w-auto p-0">
+                                <Calendar 
+                                  mode="single" 
+                                  selected={checkInDate} 
+                                  onSelect={setCheckInDate} 
+                                  initialFocus
+                                  disabled={(date) => date < new Date()}
+                                  fromDate={new Date()}
+                                />
+                              </PopoverContent>
+                            </Popover>
+                          </div>
+                          <div>
+                            <Label htmlFor="checkOut">Check-out Date *</Label>
+                            <Popover>
+                              <PopoverTrigger asChild>
+                                <Button variant="outline" className="w-full justify-start text-left font-normal">
+                                  <CalendarIcon className="mr-2 h-4 w-4" />
+                                  {checkOutDate ? format(checkOutDate, "PPP") : "Select date"}
+                                </Button>
+                              </PopoverTrigger>
+                              <PopoverContent className="w-auto p-0">
+                                <Calendar 
+                                  mode="single" 
+                                  selected={checkOutDate} 
+                                  onSelect={setCheckOutDate} 
+                                  initialFocus
+                                  disabled={(date) => date <= (checkInDate || new Date())}
+                                  fromDate={checkInDate ? new Date(checkInDate.getTime() + 24 * 60 * 60 * 1000) : new Date()}
+                                />
+                              </PopoverContent>
+                            </Popover>
                           </div>
                         </div>
-                      ) : (
-                        // Show manual input fields for non-logged-in users
-                        <>
-                          <div>
-                            <Label htmlFor="customerName">Full Name *</Label>
-                            <Input
-                              id="customerName"
-                              value={bookingData.customerName}
-                              onChange={(e) => setBookingData({ ...bookingData, customerName: e.target.value })}
-                              placeholder="Enter your full name"
-                            />
-                          </div>
-                          <div>
-                            <Label htmlFor="customerEmail">Email *</Label>
-                            <Input
-                              id="customerEmail"
-                              type="email"
-                              value={bookingData.customerEmail}
-                              onChange={(e) => setBookingData({ ...bookingData, customerEmail: e.target.value })}
-                              placeholder="Enter your email"
-                            />
-                          </div>
-                          <div>
-                            <Label htmlFor="phone">Phone Number</Label>
-                            <Input
-                              id="phone"
-                              value={bookingData.phone}
-                              onChange={(e) => setBookingData({ ...bookingData, phone: e.target.value })}
-                              placeholder="Enter your phone number"
-                            />
-                          </div>
-                        </>
-                      )}
-                      
-                      {/* Check-in and Check-out Dates */}
-                      <div className="grid grid-cols-2 gap-4">
+                        
+                        {/* Number of Guests */}
                         <div>
-                          <Label htmlFor="checkIn">Check-in Date *</Label>
-                          <Popover>
-                            <PopoverTrigger asChild>
-                              <Button variant="outline" className="w-full justify-start text-left font-normal">
-                                <CalendarIcon className="mr-2 h-4 w-4" />
-                                {checkInDate ? format(checkInDate, "PPP") : "Select date"}
-                              </Button>
-                            </PopoverTrigger>
-                            <PopoverContent className="w-auto p-0">
-                              <Calendar mode="single" selected={checkInDate} onSelect={setCheckInDate} initialFocus />
-                            </PopoverContent>
-                          </Popover>
+                          <Label htmlFor="booking-guests">Number of Guests *</Label>
+                          <Input
+                            id="booking-guests"
+                            type="number"
+                            min="1"
+                            max={room.capacity}
+                            value={bookingGuests}
+                            onChange={(e) => {
+                              const value = Number.parseInt(e.target.value)
+                              if (value > 0) {
+                                setBookingGuests(value)
+                              }
+                            }}
+                            placeholder={`Max ${room.capacity} guests`}
+                            className={bookingGuests > room.capacity || bookingGuests <= 0 ? "border-red-500 focus:border-red-500" : ""}
+                          />
+                          {(bookingGuests > room.capacity || bookingGuests <= 0) && (
+                            <div className="mt-2 p-3 bg-red-50 border border-red-200 rounded-lg">
+                              <div className="flex items-center">
+                                <svg className="w-5 h-5 text-red-500 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z" />
+                                </svg>
+                                <span className="text-red-700 text-sm font-medium">
+                                  {bookingGuests <= 0 
+                                    ? "Please enter at least 1 guest for booking." 
+                                    : `Maximum capacity for this room is ${room.capacity} guests. Please reduce the number of guests.`
+                                  }
+                                </span>
+                              </div>
+                            </div>
+                          )}
                         </div>
+                        
+                        {/* Notes */}
                         <div>
-                          <Label htmlFor="checkOut">Check-out Date *</Label>
-                          <Popover>
-                            <PopoverTrigger asChild>
-                              <Button variant="outline" className="w-full justify-start text-left font-normal">
-                                <CalendarIcon className="mr-2 h-4 w-4" />
-                                {checkOutDate ? format(checkOutDate, "PPP") : "Select date"}
-                              </Button>
-                            </PopoverTrigger>
-                            <PopoverContent className="w-auto p-0">
-                              <Calendar mode="single" selected={checkOutDate} onSelect={setCheckOutDate} initialFocus />
-                            </PopoverContent>
-                          </Popover>
+                          <Label htmlFor="notes">Special Requests (Optional)</Label>
+                          <Textarea
+                            id="notes"
+                            value={bookingData.notes}
+                            onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => setBookingData({ ...bookingData, notes: e.target.value })}
+                            placeholder="Any special requests or notes..."
+                            rows={3}
+                          />
                         </div>
                       </div>
-                      
-                      {/* Number of Guests */}
-                      <div>
-                        <Label htmlFor="booking-guests">Number of Guests *</Label>
-                        <Input
-                          id="booking-guests"
-                          type="number"
-                          min="1"
-                          max={room.capacity}
-                          value={bookingGuests}
-                          onChange={(e) => {
-                            const value = Number.parseInt(e.target.value)
-                            if (value > 0) {
-                              setBookingGuests(value)
-                            }
-                          }}
-                          placeholder={`Max ${room.capacity} guests`}
-                          className={bookingGuests > room.capacity || bookingGuests <= 0 ? "border-red-500 focus:border-red-500" : ""}
-                        />
-                        {(bookingGuests > room.capacity || bookingGuests <= 0) && (
-                          <div className="mt-2 p-3 bg-red-50 border border-red-200 rounded-lg">
+
+                      {/* Right Column - Room Details & Summary */}
+                      <div className="space-y-4">
+                        {/* Room Details */}
+                        <div className="bg-gray-50 p-6 rounded-lg">
+                          <h3 className="text-lg font-semibold mb-4">Room Details</h3>
+                          <div className="space-y-3">
+                            <div className="flex justify-between">
+                              <span className="text-gray-600">Room Type:</span>
+                              <span className="font-medium">{roomTypes[room.roomType as keyof typeof roomTypes]}</span>
+                            </div>
+                            <div className="flex justify-between">
+                              <span className="text-gray-600">Price per Night:</span>
+                              <span className="font-medium">${room.pricePerNight}</span>
+                            </div>
+                        
+            
+                          </div>
+                        </div>
+
+                        {/* Booking Summary */}
+                        {checkInDate && checkOutDate && (
+                          <div className="bg-blue-50 p-6 rounded-lg border border-blue-200">
+                            <h3 className="text-lg font-semibold mb-4 text-blue-900">Booking Summary</h3>
+                            <div className="space-y-3">
+                              <div className="flex justify-between">
+                                <span className="text-blue-700">Check-in:</span>
+                                <span className="font-medium">{format(checkInDate, "PPP")}</span>
+                              </div>
+                              <div className="flex justify-between">
+                                <span className="text-blue-700">Check-out:</span>
+                                <span className="font-medium">{format(checkOutDate, "PPP")}</span>
+                              </div>
+                              <div className="flex justify-between">
+                                <span className="text-blue-700">Duration:</span>
+                                <span className="font-medium">
+                                  {Math.ceil((checkOutDate.getTime() - checkInDate.getTime()) / (1000 * 60 * 60 * 24))} nights
+                                </span>
+                              </div>
+                              <div className="flex justify-between">
+                                <span className="text-blue-700">Guests:</span>
+                                <span className="font-medium">{bookingGuests} person(s)</span>
+                              </div>
+                              <div className="border-t border-blue-200 pt-3 mt-3">
+                                <div className="flex justify-between text-lg font-bold text-blue-900">
+                                  <span>Total:</span>
+                                  <span>
+                                    ${Math.ceil((checkOutDate.getTime() - checkInDate.getTime()) / (1000 * 60 * 60 * 24)) * room.pricePerNight}
+                                  </span>
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+                        )}
+
+                        {/* Error Display */}
+                        {bookingError && (
+                          <div className="bg-red-50 border border-red-200 rounded-lg p-4">
                             <div className="flex items-center">
                               <svg className="w-5 h-5 text-red-500 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z" />
                               </svg>
                               <span className="text-red-700 text-sm font-medium">
-                                {bookingGuests <= 0 
-                                  ? "Please enter at least 1 guest for booking." 
-                                  : `Maximum capacity for this room is ${room.capacity} guests. Please reduce the number of guests.`
-                                }
+                                {bookingError}
                               </span>
                             </div>
                           </div>
                         )}
-                      </div>
-                      
-                      {/* Notes */}
-                      <div>
-                        <Label htmlFor="notes">Special Requests (Optional)</Label>
-                        <Textarea
-                          id="notes"
-                          value={bookingData.notes}
-                          onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => setBookingData({ ...bookingData, notes: e.target.value })}
-                          placeholder="Any special requests or notes..."
-                          rows={3}
-                        />
-                      </div>
-                      
-                      {/* Booking Summary */}
-                      {checkInDate && checkOutDate && (
-                        <div className="bg-gray-50 p-4 rounded-lg">
-                          <div className="flex justify-between items-center mb-2">
-                            <span>Check-in:</span>
-                            <span>{format(checkInDate, "PPP")}</span>
-                          </div>
-                          <div className="flex justify-between items-center mb-2">
-                            <span>Check-out:</span>
-                            <span>{format(checkOutDate, "PPP")}</span>
-                          </div>
-                          <div className="flex justify-between items-center mb-2">
-                            <span>Guests:</span>
-                            <span>{bookingGuests} person(s)</span>
-                          </div>
-                          <div className="flex justify-between items-center font-bold">
-                            <span>Total:</span>
-                            <span>
-                              $
-                              {Math.ceil((checkOutDate.getTime() - checkInDate.getTime()) / (1000 * 60 * 60 * 24)) *
-                                room.pricePerNight}
-                            </span>
-                          </div>
-                        </div>
-                      )}
-                      <Button
-                        className="w-full"
-                        onClick={() => handleBooking(room)}
-                        disabled={!checkInDate || !checkOutDate || (!customerData && (!bookingData.customerName || !bookingData.customerEmail)) || bookingGuests > room.capacity || bookingGuests <= 0}
-                      >
-                        {customerData ? "Book with My Account" : "Confirm Booking"}
-                      </Button>
-                    </div>
-                  </DialogContent>
+
+                        {/* Book Button */}
+                        <Button
+                          className="w-full"
+                          onClick={() => handleBooking(room)}
+                          disabled={!checkInDate || !checkOutDate || (!customerData && (!bookingData.customerName || !bookingData.customerEmail)) || bookingGuests > room.capacity || bookingGuests <= 0 || isBookingLoading}
+                        >
+                          {isBookingLoading ? (
+                            <div className="flex items-center space-x-2">
+                              <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                              <span>Creating Booking...</span>
+                            </div>
+                          ) : (
+                            customerData ? "Book with My Account" : "Confirm Booking"
+                          )}
+                        </Button>
+                        
+                         
+                       </div>
+                     </div>
+                     <div className="pb-4"></div>
+                   </DialogContent>
                 </Dialog>
                 </div>
               </CardContent>
@@ -1271,6 +1441,109 @@ export default function HomePage() {
           </div>
         </div>
       </footer>
+
+      {/* Payment Form Modal */}
+      {showPayment && paymentData && selectedRoomForPayment && bookingDataForPayment && (
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50">
+          <div className="bg-white rounded-xl shadow-xl max-w-2xl w-full relative overflow-hidden">
+            {/* Header */}
+            <div className="bg-gradient-to-r from-blue-600 to-purple-600  text-white relative">
+              <button
+                onClick={handlePaymentCancel}
+                className="absolute top-3 right-3 text-white/80 hover:text-white transition-colors"
+              >
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+              
+              <div className="text-center">
+                <div className=" bg-white/20 rounded-full flex items-center justify-center mx-auto ">
+                  <svg className="w-1 h-1 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" />
+                  </svg>
+                </div>
+                <h2 className="text-lg font-bold">Complete Payment</h2>
+                <p className="text-blue-100 text-xs">Secure payment powered by Stripe</p>
+              </div>
+            </div>
+
+            {/* Two Column Layout */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-0">
+              {/* Left Column - Booking Summary */}
+              <div className="p-4 bg-gradient-to-br from-gray-50 to-blue-50">
+                <h3 className="text-sm font-bold text-gray-900 mb-3 flex items-center">
+                  <svg className="w-4 h-4 text-blue-600 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                  </svg>
+                  Booking Summary
+                </h3>
+                
+                <div className="space-y-3">
+                  {/* Room Info */}
+                  <div className="bg-white rounded-lg p-3 shadow-sm border border-gray-100">
+                    <div className="flex justify-between items-center text-xs">
+                      <span className="text-gray-600">Room:</span>
+                      <span className="font-medium text-gray-900">{selectedRoomForPayment.roomType}</span>
+                    </div>
+                    <div className="flex justify-between items-center text-xs mt-1">
+                      <span className="text-gray-600">Price/Night:</span>
+                      <span className="font-medium text-gray-900">${selectedRoomForPayment.pricePerNight}</span>
+                    </div>
+                    <div className="flex justify-between items-center text-xs mt-1">
+                      <span className="text-gray-600">Duration:</span>
+                      <span className="font-medium text-gray-900">
+                        {bookingDataForPayment.checkOutDate && bookingDataForPayment.checkInDate ? 
+                          Math.ceil((bookingDataForPayment.checkOutDate.getTime() - bookingDataForPayment.checkInDate.getTime()) / (1000 * 60 * 60 * 24)) : 0} nights
+                      </span>
+                    </div>
+                  </div>
+
+                  {/* Total Amount */}
+                  <div className="bg-gradient-to-r from-blue-600 to-purple-600 rounded-lg p-3 text-white">
+                    <div className="flex justify-between items-center">
+                      <span className="text-blue-100 text-xs">Total Payment:</span>
+                      <span className="text-lg font-bold">
+                        ${Math.round((bookingDataForPayment.checkOutDate && bookingDataForPayment.checkInDate ? 
+                          Math.ceil((bookingDataForPayment.checkOutDate.getTime() - bookingDataForPayment.checkInDate.getTime()) / (1000 * 60 * 60 * 24)) * selectedRoomForPayment.pricePerNight : 0))}
+                      </span>
+                    </div>
+                  </div>
+
+                  {/* Security Badge */}
+                  <div className="flex items-center justify-center">
+                    <div className="flex items-center space-x-1 bg-green-50 text-green-700 px-2 py-1 rounded-full border border-green-200">
+                      <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
+                      </svg>
+                      <span className="text-xs font-medium">SSL Encrypted</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Right Column - Payment Form */}
+              <div className="p-4 bg-white md:col-span-2">
+                <h3 className="text-sm font-bold text-gray-900 mb-3 flex items-center">
+                  <svg className="w-4 h-4 text-green-600 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" />
+                  </svg>
+                  Payment Details
+                </h3>
+                
+                <PaymentForm
+                  clientSecret={paymentData.clientSecret}
+                  bookingId={paymentData.bookingId}
+                  amount={Math.round((bookingDataForPayment.checkOutDate && bookingDataForPayment.checkInDate ? 
+                    Math.ceil((bookingDataForPayment.checkOutDate.getTime() - bookingDataForPayment.checkInDate.getTime()) / (1000 * 60 * 60 * 24)) * selectedRoomForPayment.pricePerNight : 0) * 100)}
+                  onSuccess={handlePaymentSuccess}
+                  onCancel={handlePaymentCancel}
+                />
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }
