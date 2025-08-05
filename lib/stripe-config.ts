@@ -1,7 +1,7 @@
 // Stripe configuration
 export const STRIPE_CONFIG = {
   publishableKey: process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY || 'pk_test_your_publishable_key_here',
-  apiUrl: process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080',
+  apiUrl: process.env.NEXT_PUBLIC_API_URL || process.env.NEXT_PUBLIC_API_URL,
 };
 
 // Test card numbers for development

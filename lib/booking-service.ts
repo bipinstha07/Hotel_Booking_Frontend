@@ -25,7 +25,7 @@ export interface PaymentResponse {
 }
 
 export class BookingService {
-  private baseUrl = 'http://localhost:8080/user/booking';
+  private baseUrl = `${process.env.NEXT_PUBLIC_API_URL}/user/booking`;
 
   // Create a new booking with Stripe payment intent
   async createBooking(bookingDto: Omit<BookingDto, 'id' | 'status' | 'createdAt' | 'updatedAt' | 'bookingStatus' | 'paymentStatus'>): Promise<PaymentResponse> {

@@ -181,7 +181,7 @@ export default function CustomerProfile() {
       }
       console.log('Bipin Testing',customerToken);
 
-      const response = await fetch(`http://localhost:8080/user/${customerData.email}/booking`, {
+              const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/user/${customerData.email}/booking`, {
         
         method: 'GET',
         headers: {
@@ -271,7 +271,7 @@ export default function CustomerProfile() {
         formData.append('image', selectedImageFile)
       }
 
-      const response = await fetch(`http://localhost:8080/user/update/${customerData.email}`, {
+              const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/user/update/${customerData.email}`, {
         method: 'PATCH',
         headers: {
           'Authorization': `Bearer ${customerToken}`,
@@ -421,6 +421,7 @@ export default function CustomerProfile() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center h-16">
             <div className="flex items-center">
+              <a href="/">
               <Image
                 src="/logo.png"
                 alt="LuxuryStay Logo"
@@ -428,7 +429,7 @@ export default function CustomerProfile() {
                 height={130}
                 className="mr-3 rounded-lg"
               />
-              <h1 className="text-2xl font-bold text-gray-900">My Profile</h1>
+              </a>
             </div>
             <div className="flex items-center space-x-4">
               <Button variant="outline" onClick={() => router.push("/")}>

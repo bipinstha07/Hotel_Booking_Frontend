@@ -135,7 +135,7 @@ export default function RoomsPage() {
   // Fetch room images for a specific room
   const fetchRoomImages = async (roomId: number) => {
     try {
-      const response = await fetch(`http://localhost:8080/admin/room/${roomId}/images`, {
+              const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/admin/room/${roomId}/images`, {
         method: 'GET',
         headers: {
           'Content-Type': 'application/json',
@@ -156,7 +156,7 @@ export default function RoomsPage() {
         }
         
         // Use the image ID directly with the serving endpoint
-        const imageUrl = `http://localhost:8080/admin/room/${roomId}/images/${imageId}`
+        const imageUrl = `${process.env.NEXT_PUBLIC_API_URL}/admin/room/${roomId}/images/${imageId}`
         return imageUrl
       })
       
@@ -171,7 +171,7 @@ export default function RoomsPage() {
   const fetchRooms = async () => {
     try {
       setLoading(true)
-      const response = await fetch('http://localhost:8080/admin/room/getAll', {
+              const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/admin/room/getAll`, {
         method: 'GET',
         headers: {
           'Content-Type': 'application/json',
@@ -298,6 +298,7 @@ export default function RoomsPage() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center h-16">
             <div className="flex items-center">
+              <a href="/">
               <Image
                 src="/logo.png"
                 alt="LuxuryStay Logo"
@@ -305,6 +306,7 @@ export default function RoomsPage() {
                 height={130}
                 className="mr-3 rounded-lg"
               />
+              </a>
               <Link href="/" className="text-2xl font-bold text-gray-900">
                 LuxuryStay Hotel
               </Link>

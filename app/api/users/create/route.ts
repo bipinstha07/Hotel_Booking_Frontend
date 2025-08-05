@@ -18,7 +18,7 @@ export async function POST(request: NextRequest) {
 
     // Make request to your backend API
     // You can set BACKEND_API_URL environment variable or update this URL
-    const backendUrl = process.env.BACKEND_API_URL || 'http://localhost:8080'
+    const backendUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080'
     const response = await fetch(`${backendUrl}/user/create`, {
       method: 'POST',
       body: backendFormData,

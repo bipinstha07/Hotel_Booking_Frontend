@@ -47,7 +47,7 @@ export default function CustomerAuth() {
     }
 
     try {
-      const response = await fetch("http://localhost:8080/auth/login", {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/auth/login`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -77,7 +77,7 @@ export default function CustomerAuth() {
           // Add a small delay to ensure token is valid
           await new Promise(resolve => setTimeout(resolve, 100))
           
-          const userResponse = await fetch(`http://localhost:8080/user/${data.username}`, {
+          const userResponse = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/user/${data.username}`, {
             method: 'GET',
             headers: {
               'Authorization': `Bearer ${data.token}`,
@@ -94,7 +94,7 @@ export default function CustomerAuth() {
             // Fetch user bookings
             try {
               console.log('Fetching bookings for user:', data.username)
-              const bookingsResponse = await fetch(`http://localhost:8080/user/${data.username}/booking`, {
+              const bookingsResponse = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/user/${data.username}/booking`, {
                 method: 'GET',
                 headers: {
                   'Authorization': `Bearer ${data.token}`,

@@ -40,7 +40,7 @@ export default function BookingList() {
   const fetchBookings = async () => {
     try {
       setLoading(true);
-      const response = await fetch('http://localhost:8080/admin/roombooking/getAll');
+              const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/admin/roombooking/getAll`);
       
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`);

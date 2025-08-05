@@ -10,7 +10,7 @@ export interface UserData {
 }
 
 export class UserService {
-  private baseUrl = 'http://localhost:8080/user';
+  private baseUrl = `${process.env.NEXT_PUBLIC_API_URL}/user`;
 
   // Get user profile picture by email
   async getUserProfileImage(email: string): Promise<string> {

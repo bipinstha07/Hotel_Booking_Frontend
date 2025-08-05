@@ -188,7 +188,7 @@ export default function AdminDashboard() {
         throw new Error("Admin token not found")
       }
 
-      const response = await fetch('http://localhost:8080/admin/room/booking/getAll', {
+              const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/admin/room/booking/getAll`, {
         headers: {
           'Authorization': `Bearer ${adminToken}`
         }
@@ -231,7 +231,7 @@ export default function AdminDashboard() {
         return
       }
 
-      const response = await fetch('http://localhost:8080/admin/room/booking/totalRevenue', {
+              const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/admin/room/booking/totalRevenue`, {
         method: 'GET',
         headers: {
           'Authorization': `Bearer ${adminToken}`,
@@ -274,7 +274,7 @@ export default function AdminDashboard() {
       const adminToken = localStorage.getItem("adminToken")
       if (!adminToken) return []
 
-      const response = await fetch(`http://localhost:8080/admin/room/${roomId}/images`, {
+              const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/admin/room/${roomId}/images`, {
         method: 'GET',
         headers: {
           'Authorization': `Bearer ${adminToken}`,
@@ -311,7 +311,7 @@ export default function AdminDashboard() {
         
         // Use the image ID directly with the serving endpoint
         // This will call: GET /admin/room/{roomId}/images/{imageId}
-        const imageUrl = `http://localhost:8080/admin/room/${roomId}/images/${imageId}`
+        const imageUrl = `${process.env.NEXT_PUBLIC_API_URL}/admin/room/${roomId}/images/${imageId}`
         
         return imageUrl
       })
@@ -330,7 +330,7 @@ export default function AdminDashboard() {
         return
       }
 
-      const response = await fetch('http://localhost:8080/admin/room/getAll', {
+              const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/admin/room/getAll`, {
         method: 'GET',
         headers: {
           'Authorization': `Bearer ${adminToken}`,
@@ -491,7 +491,7 @@ export default function AdminDashboard() {
       })
 
       // Make API call to create room
-      const response = await fetch('http://localhost:8080/admin/room/create', {
+              const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/admin/room/create`, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${adminToken}`,
@@ -611,7 +611,7 @@ export default function AdminDashboard() {
       })
       
       // Make API call to update room
-      const response = await fetch(`http://localhost:8080/admin/room/update/${editingRoom.id}`, {
+              const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/admin/room/update/${editingRoom.id}`, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${adminToken}`,
@@ -687,7 +687,7 @@ export default function AdminDashboard() {
       }
 
       if (itemToDelete.type === 'room') {
-        const response = await fetch(`http://localhost:8080/admin/room/delete/${itemToDelete.id}`, {
+        const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/admin/room/delete/${itemToDelete.id}`, {
           method: 'DELETE',
           headers: {
             'Authorization': `Bearer ${adminToken}`,
@@ -722,7 +722,7 @@ export default function AdminDashboard() {
 
         let response
         try {
-          response = await fetch(`http://localhost:8080/admin/room/booking/update/${itemToDelete.id}?bookingStatus=DELETED`, {
+          response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/admin/room/booking/update/${itemToDelete.id}?bookingStatus=DELETED`, {
             method: 'PATCH',
             headers: {
               'Authorization': `Bearer ${adminToken}`,
@@ -804,7 +804,7 @@ export default function AdminDashboard() {
 
       let response
       try {
-                  response = await fetch(`http://localhost:8080/admin/room/booking/update/${bookingId}?bookingStatus=APPROVED`, {
+                  response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/admin/room/booking/update/${bookingId}?bookingStatus=APPROVED`, {
           method: 'PATCH',
           headers: {
             'Authorization': `Bearer ${adminToken}`,
@@ -891,7 +891,7 @@ export default function AdminDashboard() {
 
       let response
       try {
-        response = await fetch(`http://localhost:8080/admin/room/booking/update/${bookingId}?bookingStatus=CANCELLED`, {
+        response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/admin/room/booking/update/${bookingId}?bookingStatus=CANCELLED`, {
           method: 'PATCH',
           headers: {
             'Authorization': `Bearer ${adminToken}`,
@@ -969,7 +969,7 @@ export default function AdminDashboard() {
 
       let response
       try {
-        response = await fetch(`http://localhost:8080/admin/room/booking/update/${bookingId}?bookingStatus=COMPLETED`, {
+        response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/admin/room/booking/update/${bookingId}?bookingStatus=COMPLETED`, {
           method: 'PATCH',
           headers: {
             'Authorization': `Bearer ${adminToken}`,
@@ -1261,7 +1261,7 @@ export default function AdminDashboard() {
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Stats Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+        <div className="grid  grid-cols-4 gap-2 md:gap-6 mb-8">
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium">Total Rooms</CardTitle>

@@ -162,7 +162,7 @@ export default function HomePage() {
   // Fetch room images for a specific room
   const fetchRoomImages = async (roomId: number) => {
     try {
-      const response = await fetch(`http://localhost:8080/admin/room/${roomId}/images`, {
+              const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/admin/room/${roomId}/images`, {
         method: 'GET',
         headers: {
           'Content-Type': 'application/json',
@@ -183,7 +183,7 @@ export default function HomePage() {
         }
         
         // Use the image ID directly with the serving endpoint
-        const imageUrl = `http://localhost:8080/admin/room/${roomId}/images/${imageId}`
+        const imageUrl = `${process.env.NEXT_PUBLIC_API_URL}/admin/room/${roomId}/images/${imageId}`
         return imageUrl
       })
       
@@ -199,7 +199,7 @@ export default function HomePage() {
     const fetchRooms = async () => {
       try {
         setLoading(true)
-        const response = await fetch('http://localhost:8080/admin/room/getAll', {
+        const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/admin/room/getAll`, {
           method: 'GET',
           headers: {
             'Content-Type': 'application/json',
@@ -464,6 +464,7 @@ export default function HomePage() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center h-16">
             <div className="flex items-center">
+              <a href="/">
               <Image
                 src="/logo.png"
                 alt="LuxuryStay Logo"
@@ -471,21 +472,21 @@ export default function HomePage() {
                 height={130}
                 className="mr-3 rounded-lg"
               />
-          
+        </a>          
             </div>
             <nav className="flex items-center space-x-4">
               {mounted && customerData ? (
                 <>
                   <div className="flex items-center space-x-3">
                     <div className="flex items-center space-x-2">
-                      <div className="w-8 h-8 rounded-full overflow-hidden">
+                      <div className="w-7 h-6 sm:w-8 sm:h-8 rounded-full overflow-hidden">
                         <img 
                           src={profileImage || "/placeholder-user.jpg"} 
                           alt="Profile" 
-                          className={`w-full h-full object-cover ${isLoadingProfileImage ? 'animate-pulse' : ''}`}
+                          className={`w-7 h-7 sm:w-full sm:h-full object-cover ${isLoadingProfileImage ? 'animate-pulse' : ''}`}
                         />
                       </div>
-                      <span className="text-sm text-gray-700 font-medium">
+                      <span className="text-xs text-gray-700 font-medium">
                         Welcome, {customerData.userDetails?.name || customerData.username}
                       </span>
                     </div>
@@ -1529,6 +1530,51 @@ export default function HomePage() {
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" />
                   </svg>
                   Payment Details
+                  <div className="text-xs text-gray-500 mt-3 mb-3 flex items-center ml-2 ">
+                    <span>Test Card: 378282246310005</span>
+                    <button 
+                      onClick={async () => {
+                        try {
+                          // Try the newer clipboard API first
+                          if (navigator.clipboard && window.isSecureContext) {
+                            await navigator.clipboard.writeText('378282246310005');
+                          } else {
+                            // Fallback for older browsers/mobile
+                            const textArea = document.createElement('textarea');
+                            textArea.value = '378282246310005';
+                            textArea.style.position = 'fixed';
+                            textArea.style.left = '-999999px';
+                            textArea.style.top = '-999999px';
+                            document.body.appendChild(textArea);
+                            textArea.focus();
+                            textArea.select();
+                            document.execCommand('copy');
+                            textArea.remove();
+                          }
+                          // Could add toast notification here that copy succeeded
+                        } catch (err) {
+                          console.error('Failed to copy text: ', err);
+                        }
+                      }}
+                      className="p-1 hover:bg-gray-100 rounded-md transition-colors"
+                      title="Copy card number"
+                    >
+                      <svg 
+                        className="w-3 h-3 text-gray-400" 
+                        fill="none" 
+                        stroke="currentColor" 
+                        viewBox="0 0 24 24"
+                      >
+                        <path 
+                          strokeLinecap="round" 
+                          strokeLinejoin="round" 
+                          strokeWidth={2} 
+                          d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"
+                        />
+                      </svg>
+                    </button>
+                    <span className="border-l-2 pl-4"> Use any value for other fields</span>
+                  </div>
                 </h3>
                 
                 <PaymentForm
