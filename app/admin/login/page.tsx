@@ -27,7 +27,7 @@ export default function AdminLogin() {
   useEffect(() => {
     const unauthorized = searchParams.get('unauthorized')
     if (unauthorized === 'true') {
-      setError("Unauthorized access. Please use your admin credentials to login.")
+      setError("Access denied. Please use your admin credentials to login.")
     }
   }, [searchParams])
 

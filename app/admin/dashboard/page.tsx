@@ -199,10 +199,14 @@ export default function AdminDashboard() {
       })
       
       if (!response.ok) {
-        if (response.status === 401) {
+        if (response.status === 401 || response.status === 403) {
+          const errorMessage = response.status === 401 
+            ? "Your session has expired. Please log in again."
+            : "Access denied. You don't have permission to access this resource.";
+          
           toast({
-            title: "Unauthorized",
-            description: "Your session has expired. Please log in again.",
+            title: response.status === 401 ? "Unauthorized" : "Access Denied",
+            description: errorMessage,
             variant: "destructive",
           })
           localStorage.removeItem("adminToken")
@@ -237,10 +241,14 @@ export default function AdminDashboard() {
       })
 
       if (!response.ok) {
-        if (response.status === 401) {
+        if (response.status === 401 || response.status === 403) {
+          const errorMessage = response.status === 401 
+            ? "Your session has expired. Please log in again."
+            : "Access denied. You don't have permission to access this resource.";
+          
           toast({
-            title: "Unauthorized",
-            description: "Your session has expired. Please log in again.",
+            title: response.status === 401 ? "Unauthorized" : "Access Denied",
+            description: errorMessage,
             variant: "destructive",
           })
           localStorage.removeItem("adminToken")
@@ -289,10 +297,10 @@ export default function AdminDashboard() {
       })
 
       if (!response.ok) {
-        if (response.status === 401) {
+        if (response.status === 401 || response.status === 403) {
           toast({
-            title: "Unauthorized",
-            description: "Your session has expired. Please log in again.",
+            title: response.status === 401 ? "Unauthorized" : "Access Denied",
+            description: response.status === 401 ? "Your session has expired. Please log in again." : "Access denied. You do not have permission to access this resource.",
             variant: "destructive",
           })
           localStorage.removeItem("adminToken")
@@ -450,10 +458,10 @@ export default function AdminDashboard() {
       })
 
       if (!response.ok) {
-        if (response.status === 401) {
+        if (response.status === 401 || response.status === 403) {
           toast({
-            title: "Unauthorized",
-            description: "Your session has expired. Please log in again.",
+            title: response.status === 401 ? "Unauthorized" : "Access Denied",
+            description: response.status === 401 ? "Your session has expired. Please log in again." : "Access denied. You do not have permission to access this resource.",
             variant: "destructive",
           })
           localStorage.removeItem("adminToken")
@@ -570,10 +578,10 @@ export default function AdminDashboard() {
       })
 
       if (!response.ok) {
-        if (response.status === 401) {
+        if (response.status === 401 || response.status === 403) {
           toast({
-            title: "Unauthorized",
-            description: "Your session has expired. Please log in again.",
+            title: response.status === 401 ? "Unauthorized" : "Access Denied",
+            description: response.status === 401 ? "Your session has expired. Please log in again." : "Access denied. You do not have permission to access this resource.",
             variant: "destructive",
           })
           localStorage.removeItem("adminToken")
@@ -646,10 +654,10 @@ export default function AdminDashboard() {
         })
 
         if (!response.ok) {
-          if (response.status === 401) {
+          if (response.status === 401 || response.status === 403) {
             toast({
-              title: "Unauthorized",
-              description: "Your session has expired. Please log in again.",
+              title: response.status === 401 ? "Unauthorized" : "Access Denied",
+              description: response.status === 401 ? "Your session has expired. Please log in again." : "Access denied. You do not have permission to access this resource.",
               variant: "destructive",
             })
             localStorage.removeItem("adminToken")
@@ -685,10 +693,10 @@ export default function AdminDashboard() {
         }
 
         if (!response.ok) {
-          if (response.status === 401) {
+          if (response.status === 401 || response.status === 403) {
             toast({
-              title: "Unauthorized",
-              description: "Your session has expired. Please log in again.",
+              title: response.status === 401 ? "Unauthorized" : "Access Denied",
+              description: response.status === 401 ? "Your session has expired. Please log in again." : "Access denied. You do not have permission to access this resource.",
               variant: "destructive",
             })
             localStorage.removeItem("adminToken")
@@ -763,10 +771,10 @@ export default function AdminDashboard() {
         }
 
       if (!response.ok) {
-        if (response.status === 401) {
+        if (response.status === 401 || response.status === 403) {
           toast({
-            title: "Unauthorized",
-            description: "Your session has expired. Please log in again.",
+            title: response.status === 401 ? "Unauthorized" : "Access Denied",
+            description: response.status === 401 ? "Your session has expired. Please log in again." : "Access denied. You do not have permission to access this resource.",
             variant: "destructive",
           })
           localStorage.removeItem("adminToken")
@@ -847,10 +855,10 @@ export default function AdminDashboard() {
       }
 
       if (!response.ok) {
-        if (response.status === 401) {
+        if (response.status === 401 || response.status === 403) {
           toast({
-            title: "Unauthorized",
-            description: "Your session has expired. Please log in again.",
+            title: response.status === 401 ? "Unauthorized" : "Access Denied",
+            description: response.status === 401 ? "Your session has expired. Please log in again." : "Access denied. You do not have permission to access this resource.",
             variant: "destructive",
           })
           localStorage.removeItem("adminToken")
@@ -922,10 +930,10 @@ export default function AdminDashboard() {
       }
 
       if (!response.ok) {
-        if (response.status === 401) {
+        if (response.status === 401 || response.status === 403) {
           toast({
-            title: "Unauthorized",
-            description: "Your session has expired. Please log in again.",
+            title: response.status === 401 ? "Unauthorized" : "Access Denied",
+            description: response.status === 401 ? "Your session has expired. Please log in again." : "Access denied. You do not have permission to access this resource.",
             variant: "destructive",
           })
           localStorage.removeItem("adminToken")
