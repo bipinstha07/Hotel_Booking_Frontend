@@ -50,6 +50,7 @@ export default function CustomerProfile() {
     name: "",
     email: "",
   })
+  const [selectedImageFile, setSelectedImageFile] = useState<File | null>(null)
   const router = useRouter()
 
   useEffect(() => {
@@ -233,8 +234,8 @@ export default function CustomerProfile() {
 
   const handleUpdateProfile = async () => {
     // Validation
-    if (!editData.name || !editData.email) {
-      toast.error("Name and email are required")
+    if (!editData.name) {
+      toast.error("Name is required")
       return
     }
 
@@ -243,31 +244,106 @@ export default function CustomerProfile() {
       return
     }
 
-    const emailRegex = /^[A-Za-z0-9+_.-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,6}$/
-    if (!emailRegex.test(editData.email)) {
-      toast.error("Invalid email format")
-      return
+    try {
+      const customerToken = localStorage.getItem("customerToken")
+      if (!customerToken) {
+        toast.error("Authentication required")
+        return
+      }
+
+      // Prepare user data (excluding userEmail as per API spec)
+      const userData = {
+        name: editData.name,
+        number: editData.number || "",
+        address: editData.address || "",
+        dateOfBirth: editData.dateOfBirth || "",
+        // Don't include userEmail as per API specification
+      }
+
+      // Create FormData for multipart/form-data
+      const formData = new FormData()
+      
+      // Add user data as JSON string
+      formData.append('userDto', JSON.stringify(userData))
+      
+      // Add image if there's a new one selected
+      if (selectedImageFile) {
+        formData.append('image', selectedImageFile)
+      }
+
+      const response = await fetch(`http://localhost:8080/user/update/${customerData.email}`, {
+        method: 'PATCH',
+        headers: {
+          'Authorization': `Bearer ${customerToken}`,
+          // Don't set Content-Type for FormData, browser will set it automatically with boundary
+        },
+        body: formData
+      })
+
+      if (response.ok) {
+        const updatedUser = await response.json()
+        
+        // Update local state with the response data
+        const updatedCustomerData = {
+          ...editData,
+          name: updatedUser.name || editData.name,
+          number: updatedUser.number || editData.number,
+          address: updatedUser.address || editData.address,
+          dateOfBirth: updatedUser.dateOfBirth || editData.dateOfBirth,
+        }
+        
+        setCustomerData(updatedCustomerData)
+        
+        // Update localStorage
+        const storedData = localStorage.getItem("customerData")
+        if (storedData) {
+          const data = JSON.parse(storedData)
+          const updatedData = {
+            ...data,
+            userDetails: {
+              ...data.userDetails,
+              ...updatedCustomerData
+            }
+          }
+          localStorage.setItem("customerData", JSON.stringify(updatedData))
+        }
+        
+        setIsEditing(false)
+        setSelectedImageFile(null) // Clear selected image file
+        toast.success("Profile updated successfully!")
+      } else {
+        const errorData = await response.json()
+        toast.error(`Failed to update profile: ${errorData.message || 'Unknown error'}`)
+      }
+    } catch (error) {
+      console.error('Error updating profile:', error)
+      toast.error("Failed to update profile. Please try again.")
     }
-
-    // Here you would make API call to update customer data
-    console.log("Updating customer data:", editData)
-
-    setCustomerData(editData)
-    localStorage.setItem("customerData", JSON.stringify(editData))
-    setIsEditing(false)
-    toast.success("Profile updated successfully!")
   }
 
   const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
     if (file) {
+      // Validate file type
+      if (!file.type.startsWith('image/')) {
+        toast.error("Please select a valid image file")
+        return
+      }
+      
+      // Validate file size (max 5MB)
+      if (file.size > 5 * 1024 * 1024) {
+        toast.error("Image size should be less than 5MB")
+        return
+      }
+      
+      // Store the selected file for API upload
+      setSelectedImageFile(file)
+      
       // Create a preview URL for immediate display
       const imageUrl = URL.createObjectURL(file)
       setEditData({ ...editData, profileImage: imageUrl })
       
-      // Here you would typically upload the image to your backend
-      // For now, we'll just show the preview
-      toast.success("Profile picture updated! (Note: This is a preview - actual upload would require backend integration)")
+      toast.success("Profile picture selected! Click 'Save Changes' to upload.")
     }
   }
 
@@ -378,7 +454,12 @@ export default function CustomerProfile() {
               <CardHeader>
                 <div className="flex justify-between items-center">
                   <CardTitle>Profile Information</CardTitle>
-                  <Button variant="outline" onClick={() => setIsEditing(!isEditing)}>
+                  <Button variant="outline" onClick={() => {
+                    if (!isEditing) {
+                      setSelectedImageFile(null) // Clear selected image file when starting to edit
+                    }
+                    setIsEditing(!isEditing)
+                  }}>
                     <Edit className="h-4 w-4 mr-2" />
                     {isEditing ? "Cancel" : "Edit Profile"}
                   </Button>
@@ -432,6 +513,46 @@ export default function CustomerProfile() {
                       Refresh
                     </Button>
                   </div>
+                  
+                  {/* Image Preview Section */}
+                  {isEditing && selectedImageFile && (
+                    <div className="mt-4 p-4 bg-gray-50 rounded-lg border-2 border-dashed border-gray-300">
+                      <div className="text-center">
+                        <h4 className="text-sm font-medium text-gray-700 mb-2">Image Preview</h4>
+                        <div className="relative inline-block">
+                          <Avatar className="h-20 w-20 border-2 border-white shadow-md">
+                            <AvatarImage 
+                              src={editData.profileImage || "/placeholder-user.jpg"} 
+                              alt="Preview"
+                              className="object-cover"
+                            />
+                            <AvatarFallback className="text-lg">
+                              <User className="h-6 w-6" />
+                            </AvatarFallback>
+                          </Avatar>
+                          <div className="absolute -top-2 -right-2 bg-green-500 text-white rounded-full w-6 h-6 flex items-center justify-center">
+                            <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
+                              <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                            </svg>
+                          </div>
+                        </div>
+                        <p className="text-xs text-gray-600 mt-2">
+                          {selectedImageFile.name} ({(selectedImageFile.size / 1024 / 1024).toFixed(2)} MB)
+                        </p>
+                        <Button 
+                          variant="outline" 
+                          size="sm" 
+                          className="mt-2"
+                          onClick={() => {
+                            setSelectedImageFile(null)
+                            setEditData({ ...editData, profileImage: customerData.profileImage })
+                          }}
+                        >
+                          Remove
+                        </Button>
+                      </div>
+                    </div>
+                  )}
                 </div>
 
                 <div className="space-y-4">
@@ -447,14 +568,16 @@ export default function CustomerProfile() {
                       />
                     </div>
                     <div>
-                      <Label htmlFor="email" className="text-sm font-medium">Email Address</Label>
+                      <Label htmlFor="email" className="text-sm font-medium">
+                        Email Address 
+                      </Label>
                       <Input
                         id="email"
                         type="email"
-                        value={isEditing ? editData.email : customerData.email}
-                        onChange={(e) => setEditData({ ...editData, email: e.target.value })}
-                        disabled={!isEditing}
-                        className="h-9 text-sm"
+                        value={customerData.email}
+                        disabled={true}
+                        className="h-9 text-sm bg-gray-50"
+                        placeholder="Email cannot be changed"
                       />
                     </div>
                   </div>
@@ -499,7 +622,10 @@ export default function CustomerProfile() {
 
                 {isEditing && (
                   <div className="flex justify-end space-x-2 pt-2">
-                    <Button variant="outline" size="sm" onClick={() => setIsEditing(false)}>
+                    <Button variant="outline" size="sm" onClick={() => {
+                      setIsEditing(false)
+                      setSelectedImageFile(null) // Clear selected image file
+                    }}>
                       Cancel
                     </Button>
                     <Button size="sm" onClick={handleUpdateProfile}>Save Changes</Button>
