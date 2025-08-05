@@ -2,6 +2,19 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Hide Next.js error overlay */
+#__next-build-watcher,
+#__next-prerender-indicator,
+.nextjs-toast-errors-parent {
+  display: none !important;
+}
+
+/* Hide Next.js error overlay buttons */
+[data-nextjs-dialog-overlay],
+[data-nextjs-dialog] {
+  display: none !important;
+}
+
 @layer utilities {
   .text-balance {
     text-wrap: balance;
