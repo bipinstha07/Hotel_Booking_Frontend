@@ -92,9 +92,6 @@ const ImageSlider = memo(({ images, roomId }: { images: string[], roomId: string
     setCurrentImageIndex((prev) => (prev - 1 + images.length) % images.length)
   }
 
-  console.log(`Rendering slider for room ${roomId} with ${images.length} images:`, images)
-  console.log(`Current image URL (index ${currentImageIndex}):`, images[currentImageIndex])
-
   if (images.length === 0) {
     return (
       <div className="relative h-64 bg-gray-200 flex items-center justify-center">
@@ -184,12 +181,21 @@ export default function AdminDashboard() {
 
   const fetchBookings = async () => {
     try {
-      const response = await fetch('http://localhost:8080/admin/room/booking/getAll')
+      const adminToken = localStorage.getItem("adminToken")
+      if (!adminToken) {
+        throw new Error("Admin token not found")
+      }
+
+      const response = await fetch('http://localhost:8080/admin/room/booking/getAll', {
+        headers: {
+          'Authorization': `Bearer ${adminToken}`
+        }
+      })
       
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`)
       }
-      
+      console.log('Bipin Testing',adminToken);
       const data = await response.json()
       setBookings(data)
     } catch (err) {
@@ -221,24 +227,19 @@ export default function AdminDashboard() {
       }
 
       const imageIds = await response.json()
-      console.log(`Image IDs for room ${roomId}:`, imageIds)
       
       // Use image IDs directly with the image serving endpoint
       const imageUrls = imageIds.map((imageId: string) => {
         if (imageId.startsWith('http')) {
-          console.log(`Already full URL: ${imageId}`)
           return imageId // Already a full URL
         }
         
         // Use the image ID directly with the serving endpoint
         // This will call: GET /admin/room/{roomId}/images/{imageId}
         const imageUrl = `http://localhost:8080/admin/room/${roomId}/images/${imageId}`
-        console.log(`Image ID: ${imageId} → Serving URL: ${imageUrl}`)
         
         return imageUrl
       })
-      
-      console.log(`Final image URLs for room ${roomId}:`, imageUrls)
       return imageUrls
     } catch (error) {
       console.error(`Error fetching images for room ${roomId}:`, error)
@@ -419,9 +420,6 @@ export default function AdminDashboard() {
       }
 
       const createdRoom = await response.json()
-      console.log("Room created successfully:", createdRoom)
-      console.log("Created room images:", createdRoom.images)
-      console.log("Created room structure:", JSON.stringify(createdRoom, null, 2))
 
       // Check if the response status is 201 (CREATED)
       if (response.status === 201) {
@@ -532,7 +530,6 @@ export default function AdminDashboard() {
       }
 
       const updatedRoom = await response.json()
-      console.log("Room updated successfully:", updatedRoom)
 
       // Refresh the rooms list to get the updated data from the server
       await fetchRooms()
@@ -607,11 +604,6 @@ export default function AdminDashboard() {
         })
       } else if (itemToDelete.type === 'booking') {
         // Call the backend API to update booking status to DELETED
-        console.log('Making API call to delete booking:', {
-          bookingId: itemToDelete.id,
-          bookingStatus: "DELETED",
-          adminToken: adminToken ? 'Present' : 'Missing'
-        })
 
         let response
         try {
@@ -627,8 +619,6 @@ export default function AdminDashboard() {
           throw new Error(`Network error: ${fetchError instanceof Error ? fetchError.message : 'Unknown network error'}`)
         }
 
-        console.log('API Response status:', response.status)
-
         if (!response.ok) {
           const errorText = await response.text()
           console.error('API Error response:', errorText)
@@ -637,7 +627,6 @@ export default function AdminDashboard() {
 
         // Parse response as text (since backend returns plain string)
         const responseData = await response.text()
-        console.log('API Response data:', responseData)
 
         // Update local state after successful API call - mark as deleted instead of removing
         const updatedBookings = bookings.map((booking) =>
@@ -683,11 +672,6 @@ export default function AdminDashboard() {
       }
 
       // Call the backend API to update booking status
-      console.log('Making API call to update booking status:', {
-        bookingId,
-        bookingStatus: "APPROVED",
-        adminToken: adminToken ? 'Present' : 'Missing'
-      })
 
       let response
       try {
@@ -698,13 +682,10 @@ export default function AdminDashboard() {
             'Content-Type': 'application/json',
           }
         })
-      } catch (fetchError) {
-        console.error('Network error during fetch:', fetchError)
-        throw new Error(`Network error: ${fetchError instanceof Error ? fetchError.message : 'Unknown network error'}`)
-      }
-
-      console.log('API Response status:', response.status)
-      console.log('API Response headers:', response.headers)
+              } catch (fetchError) {
+          console.error('Network error during fetch:', fetchError)
+          throw new Error(`Network error: ${fetchError instanceof Error ? fetchError.message : 'Unknown network error'}`)
+        }
 
       if (!response.ok) {
         const errorText = await response.text()
@@ -714,7 +695,6 @@ export default function AdminDashboard() {
 
       // Parse response as text (since backend returns plain string)
       const responseData = await response.text()
-      console.log('API Response data:', responseData)
 
       // Update local state after successful API call
       const updatedBookings = bookings.map((booking) =>
@@ -766,11 +746,6 @@ export default function AdminDashboard() {
       }
 
       // Call the backend API to update booking status
-      console.log('Making API call to cancel booking:', {
-        bookingId,
-        bookingStatus: "CANCELLED",
-        adminToken: adminToken ? 'Present' : 'Missing'
-      })
 
       let response
       try {
@@ -786,8 +761,6 @@ export default function AdminDashboard() {
         throw new Error(`Network error: ${fetchError instanceof Error ? fetchError.message : 'Unknown network error'}`)
       }
 
-      console.log('API Response status:', response.status)
-
       if (!response.ok) {
         const errorText = await response.text()
         console.error('API Error response:', errorText)
@@ -796,7 +769,6 @@ export default function AdminDashboard() {
 
       // Parse response as text (since backend returns plain string)
       const responseData = await response.text()
-      console.log('API Response data:', responseData)
 
       // Update local state after successful API call
       const updatedBookings = bookings.map((booking) =>
@@ -839,11 +811,6 @@ export default function AdminDashboard() {
       }
 
       // Call the backend API to update booking status
-      console.log('Making API call to complete booking:', {
-        bookingId,
-        bookingStatus: "COMPLETED",
-        adminToken: adminToken ? 'Present' : 'Missing'
-      })
 
       let response
       try {
@@ -859,8 +826,6 @@ export default function AdminDashboard() {
         throw new Error(`Network error: ${fetchError instanceof Error ? fetchError.message : 'Unknown network error'}`)
       }
 
-      console.log('API Response status:', response.status)
-
       if (!response.ok) {
         const errorText = await response.text()
         console.error('API Error response:', errorText)
@@ -869,7 +834,6 @@ export default function AdminDashboard() {
 
       // Parse response as text (since backend returns plain string)
       const responseData = await response.text()
-      console.log('API Response data:', responseData)
 
       // Update local state after successful API call
       const updatedBookings = bookings.map((booking) =>

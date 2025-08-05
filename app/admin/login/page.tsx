@@ -48,7 +48,7 @@ export default function AdminLogin() {
         setError(errorData.message || "Invalid credentials")
       }
     } catch (error) {
-      console.error('Login error:', error)
+    
       setError("Network error. Please try again.")
     }
 

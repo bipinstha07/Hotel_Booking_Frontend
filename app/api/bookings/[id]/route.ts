@@ -59,7 +59,7 @@ export async function GET(
 
     return NextResponse.json(booking, { status: 200 });
   } catch (error) {
-    console.error('Error fetching booking:', error);
+ 
     return NextResponse.json(
       { error: 'Internal server error' },
       { status: 500 }
@@ -100,7 +100,7 @@ export async function PATCH(
 
     return NextResponse.json(updatedBooking, { status: 200 });
   } catch (error) {
-    console.error('Error updating booking:', error);
+    
     return NextResponse.json(
       { error: 'Internal server error' },
       { status: 500 }
@@ -132,7 +132,6 @@ export async function DELETE(
       { status: 200 }
     );
   } catch (error) {
-    console.error('Error deleting booking:', error);
     return NextResponse.json(
       { error: 'Internal server error' },
       { status: 500 }

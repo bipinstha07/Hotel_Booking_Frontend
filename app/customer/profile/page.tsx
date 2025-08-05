@@ -178,16 +178,19 @@ export default function CustomerProfile() {
         toast.error("Authentication required")
         return
       }
+      console.log('Bipin Testing',customerToken);
 
       const response = await fetch(`http://localhost:8080/user/${customerData.email}/booking`, {
+        
         method: 'GET',
         headers: {
           'Authorization': `Bearer ${customerToken}`,
           'Content-Type': 'application/json',
         },
       })
-
+      console.log('Bipin Testing',customerToken);
       if (response.ok) {
+        console.log('Bipin Testing',customerToken);
         const apiBookings = await response.json()
         
         // Transform API bookings to match our interface
