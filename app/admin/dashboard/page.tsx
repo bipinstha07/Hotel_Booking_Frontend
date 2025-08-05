@@ -170,6 +170,7 @@ export default function AdminDashboard() {
   const [searchTerm, setSearchTerm] = useState("")
   const [bookingSearchTerm, setBookingSearchTerm] = useState("")
   const [bookingStatusFilter, setBookingStatusFilter] = useState<string>("ALL")
+  const [totalRevenue, setTotalRevenue] = useState<number>(0)
   const router = useRouter()
   const { toast } = useToast()
 
@@ -177,12 +178,7 @@ export default function AdminDashboard() {
   useEffect(() => {
     setMounted(true)
     fetchBookings()
-  }, [])
-
-  // Prevent hydration mismatch
-  useEffect(() => {
-    setMounted(true)
-    fetchBookings()
+    fetchTotalRevenue()
   }, [])
 
   const fetchBookings = async () => {
@@ -222,6 +218,52 @@ export default function AdminDashboard() {
       toast({
         title: "Error",
         description: "Failed to fetch bookings from the API",
+        variant: "destructive",
+      })
+    }
+  }
+
+  const fetchTotalRevenue = async () => {
+    try {
+      const adminToken = localStorage.getItem("adminToken")
+      if (!adminToken) {
+        router.push("/admin/login?unauthorized=true")
+        return
+      }
+
+      const response = await fetch('http://localhost:8080/admin/room/booking/totalRevenue', {
+        method: 'GET',
+        headers: {
+          'Authorization': `Bearer ${adminToken}`,
+          'Content-Type': 'application/json',
+        },
+      })
+
+      if (!response.ok) {
+        if (response.status === 401 || response.status === 403) {
+          const errorMessage = response.status === 401 
+            ? "Your session has expired. Please log in again."
+            : "Access denied. You don't have permission to access this resource.";
+          
+          toast({
+            title: response.status === 401 ? "Unauthorized" : "Access Denied",
+            description: errorMessage,
+            variant: "destructive",
+          })
+          localStorage.removeItem("adminToken")
+          router.push("/admin/login?unauthorized=true")
+          return
+        }
+        throw new Error(`HTTP error! status: ${response.status}`)
+      }
+      
+      const revenue = await response.json()
+      setTotalRevenue(revenue)
+    } catch (err) {
+      console.error('Error fetching total revenue:', err)
+      toast({
+        title: "Error",
+        description: "Failed to fetch total revenue from the API",
         variant: "destructive",
       })
     }
@@ -716,6 +758,10 @@ export default function AdminDashboard() {
           booking.id === itemToDelete.id ? { ...booking, bookingStatus: "DELETED" } : booking,
         )
         setBookings(updatedBookings)
+        
+        // Refresh revenue data
+        fetchTotalRevenue()
+        
         toast({
           title: "Booking Deleted!",
           description: "Booking has been marked as deleted",
@@ -794,6 +840,9 @@ export default function AdminDashboard() {
         booking.id === bookingId ? { ...booking, bookingStatus: "APPROVED" } : booking,
       )
       setBookings(updatedBookings)
+      
+      // Refresh revenue data
+      fetchTotalRevenue()
       
       toast({
         title: "Booking Approved!",
@@ -879,6 +928,9 @@ export default function AdminDashboard() {
       )
       setBookings(updatedBookings)
       
+      // Refresh revenue data
+      fetchTotalRevenue()
+      
       toast({
         title: "Booking Cancelled!",
         description: "Booking has been cancelled successfully",
@@ -953,6 +1005,9 @@ export default function AdminDashboard() {
         booking.id === bookingId ? { ...booking, bookingStatus: "COMPLETED" } : booking,
       )
       setBookings(updatedBookings)
+      
+      // Refresh revenue data
+      fetchTotalRevenue()
       
       toast({
         title: "Booking Completed!",
@@ -1236,11 +1291,11 @@ export default function AdminDashboard() {
           </Card>
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Revenue</CardTitle>
+              <CardTitle className="text-sm font-medium">Total Revenue</CardTitle>
               <DollarSign className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">$1,25,000</div>
+              <div className="text-2xl font-bold">${totalRevenue.toLocaleString()}</div>
             </CardContent>
           </Card>
         </div>
