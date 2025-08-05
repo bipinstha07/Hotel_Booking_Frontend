@@ -129,9 +129,9 @@ export default function AdminLogin() {
             </div>
 
             <div className="mt-4 p-4 bg-gray-50 rounded-lg">
-              <p className="text-xs text-gray-500">To test the backend, use the following credentials:</p>
-              <p className="text-xs text-gray-500">Email: test@gmail.com</p>
-              <p className="text-xs text-gray-500">Password: 123456</p>
+              <p className="text-xs text-gray-500">To test the Admin Panel, use the following credentials:</p>
+              <p className="text-xs text-gray-500">Email: admin@gmail.com</p>
+              <p className="text-xs text-gray-500">Password: admin123</p>
             </div>
           </CardContent>
         </Card>

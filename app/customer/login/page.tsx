@@ -475,6 +475,11 @@ export default function CustomerAuth() {
               <Link href="/" className="text-sm text-blue-600 hover:text-blue-500">
                 Back to Home
               </Link>
+              <div className="mt-4 p-4 bg-gray-50 rounded-lg">
+              <p className="text-xs text-gray-500">To test the Customer Panel, use the following credentials:</p>
+              <p className="text-xs text-gray-500">Email: customer@gmail.com</p>
+              <p className="text-xs text-gray-500">Password: customer123</p>
+            </div>
             </div>
           </CardContent>
         </Card>
