@@ -179,6 +179,12 @@ export default function AdminDashboard() {
     fetchBookings()
   }, [])
 
+  // Prevent hydration mismatch
+  useEffect(() => {
+    setMounted(true)
+    fetchBookings()
+  }, [])
+
   const fetchBookings = async () => {
     try {
       const adminToken = localStorage.getItem("adminToken")
@@ -193,9 +199,18 @@ export default function AdminDashboard() {
       })
       
       if (!response.ok) {
+        if (response.status === 401) {
+          toast({
+            title: "Unauthorized",
+            description: "Your session has expired. Please log in again.",
+            variant: "destructive",
+          })
+          localStorage.removeItem("adminToken")
+          router.push("/admin/login?unauthorized=true")
+          return
+        }
         throw new Error(`HTTP error! status: ${response.status}`)
       }
-      console.log('Bipin Testing',adminToken);
       const data = await response.json()
       setBookings(data)
     } catch (err) {
@@ -222,6 +237,16 @@ export default function AdminDashboard() {
       })
 
       if (!response.ok) {
+        if (response.status === 401) {
+          toast({
+            title: "Unauthorized",
+            description: "Your session has expired. Please log in again.",
+            variant: "destructive",
+          })
+          localStorage.removeItem("adminToken")
+          router.push("/admin/login?unauthorized=true")
+          return []
+        }
         console.error(`Failed to fetch images for room ${roomId}: ${response.status}`)
         return []
       }
@@ -251,7 +276,7 @@ export default function AdminDashboard() {
     try {
       const adminToken = localStorage.getItem("adminToken")
       if (!adminToken) {
-        router.push("/admin/login")
+        router.push("/admin/login?unauthorized=true")
         return
       }
 
@@ -264,6 +289,16 @@ export default function AdminDashboard() {
       })
 
       if (!response.ok) {
+        if (response.status === 401) {
+          toast({
+            title: "Unauthorized",
+            description: "Your session has expired. Please log in again.",
+            variant: "destructive",
+          })
+          localStorage.removeItem("adminToken")
+          router.push("/admin/login?unauthorized=true")
+          return
+        }
         throw new Error(`Failed to fetch rooms: ${response.status}`)
       }
 
@@ -328,7 +363,7 @@ export default function AdminDashboard() {
     // Check if admin is logged in
     const adminToken = localStorage.getItem("adminToken")
     if (!adminToken) {
-      router.push("/admin/login")
+      router.push("/admin/login?unauthorized=true")
       return
     }
 
@@ -381,7 +416,7 @@ export default function AdminDashboard() {
           duration: 5000,
           className: "text-sm",
         })
-        router.push("/admin/login")
+        router.push("/admin/login?unauthorized=true")
         return
       }
 
@@ -415,6 +450,16 @@ export default function AdminDashboard() {
       })
 
       if (!response.ok) {
+        if (response.status === 401) {
+          toast({
+            title: "Unauthorized",
+            description: "Your session has expired. Please log in again.",
+            variant: "destructive",
+          })
+          localStorage.removeItem("adminToken")
+          router.push("/admin/login?unauthorized=true")
+          return
+        }
         const errorData = await response.json()
         throw new Error(errorData.message || 'Failed to create room')
       }
@@ -493,7 +538,7 @@ export default function AdminDashboard() {
           duration: 5000,
           className: "text-sm",
         })
-        router.push("/admin/login")
+        router.push("/admin/login?unauthorized=true")
         return
       }
 
@@ -525,6 +570,16 @@ export default function AdminDashboard() {
       })
 
       if (!response.ok) {
+        if (response.status === 401) {
+          toast({
+            title: "Unauthorized",
+            description: "Your session has expired. Please log in again.",
+            variant: "destructive",
+          })
+          localStorage.removeItem("adminToken")
+          router.push("/admin/login?unauthorized=true")
+          return
+        }
         const errorData = await response.json()
         throw new Error(errorData.message || 'Failed to update room')
       }
@@ -577,7 +632,7 @@ export default function AdminDashboard() {
           duration: 5000,
           className: "text-sm",
         })
-        router.push("/admin/login")
+        router.push("/admin/login?unauthorized=true")
         return
       }
 
@@ -591,6 +646,16 @@ export default function AdminDashboard() {
         })
 
         if (!response.ok) {
+          if (response.status === 401) {
+            toast({
+              title: "Unauthorized",
+              description: "Your session has expired. Please log in again.",
+              variant: "destructive",
+            })
+            localStorage.removeItem("adminToken")
+            router.push("/admin/login?unauthorized=true")
+            return
+          }
           throw new Error(`Failed to delete room: ${response.status}`)
         }
 
@@ -620,6 +685,16 @@ export default function AdminDashboard() {
         }
 
         if (!response.ok) {
+          if (response.status === 401) {
+            toast({
+              title: "Unauthorized",
+              description: "Your session has expired. Please log in again.",
+              variant: "destructive",
+            })
+            localStorage.removeItem("adminToken")
+            router.push("/admin/login?unauthorized=true")
+            return
+          }
           const errorText = await response.text()
           console.error('API Error response:', errorText)
           throw new Error(`Failed to delete booking: ${response.status} - ${errorText}`)
@@ -667,7 +742,7 @@ export default function AdminDashboard() {
           duration: 5000,
           className: "text-sm",
         })
-        router.push("/admin/login")
+        router.push("/admin/login?unauthorized=true")
         return
       }
 
@@ -688,6 +763,16 @@ export default function AdminDashboard() {
         }
 
       if (!response.ok) {
+        if (response.status === 401) {
+          toast({
+            title: "Unauthorized",
+            description: "Your session has expired. Please log in again.",
+            variant: "destructive",
+          })
+          localStorage.removeItem("adminToken")
+          router.push("/admin/login?unauthorized=true")
+          return
+        }
         const errorText = await response.text()
         console.error('API Error response:', errorText)
         throw new Error(`Failed to update booking status: ${response.status} - ${errorText}`)
@@ -741,7 +826,7 @@ export default function AdminDashboard() {
           duration: 5000,
           className: "text-sm",
         })
-        router.push("/admin/login")
+        router.push("/admin/login?unauthorized=true")
         return
       }
 
@@ -762,6 +847,16 @@ export default function AdminDashboard() {
       }
 
       if (!response.ok) {
+        if (response.status === 401) {
+          toast({
+            title: "Unauthorized",
+            description: "Your session has expired. Please log in again.",
+            variant: "destructive",
+          })
+          localStorage.removeItem("adminToken")
+          router.push("/admin/login?unauthorized=true")
+          return
+        }
         const errorText = await response.text()
         console.error('API Error response:', errorText)
         throw new Error(`Failed to update booking status: ${response.status} - ${errorText}`)
@@ -806,7 +901,7 @@ export default function AdminDashboard() {
           duration: 5000,
           className: "text-sm",
         })
-        router.push("/admin/login")
+        router.push("/admin/login?unauthorized=true")
         return
       }
 
@@ -827,6 +922,16 @@ export default function AdminDashboard() {
       }
 
       if (!response.ok) {
+        if (response.status === 401) {
+          toast({
+            title: "Unauthorized",
+            description: "Your session has expired. Please log in again.",
+            variant: "destructive",
+          })
+          localStorage.removeItem("adminToken")
+          router.push("/admin/login?unauthorized=true")
+          return
+        }
         const errorText = await response.text()
         console.error('API Error response:', errorText)
         throw new Error(`Failed to update booking status: ${response.status} - ${errorText}`)
@@ -1049,7 +1154,7 @@ export default function AdminDashboard() {
 
   const handleLogout = () => {
     localStorage.removeItem("adminToken")
-    router.push("/admin/login")
+    router.push("/admin/login?unauthorized=true")
   }
 
 

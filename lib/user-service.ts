@@ -15,16 +15,30 @@ export class UserService {
   // Get user profile picture by email
   async getUserProfileImage(email: string): Promise<string> {
     try {
+      // Get the user token from localStorage
+      const userToken = localStorage.getItem("customerToken");
+      console.log('Bipin Testing',userToken);
       const response = await fetch(`${this.baseUrl}/image/${encodeURIComponent(email)}`, {
         method: 'GET',
         headers: {
           'Content-Type': 'application/json',
+         'Authorization': `Bearer ${userToken}` 
         },
       });
 
       if (!response.ok) {
         // If the API returns an error, return a placeholder image
         console.warn(`Failed to fetch profile image for ${email}:`, response.status);
+        console.warn('Response headers:', Object.fromEntries(response.headers.entries()));
+        
+        // Try to get error details
+        try {
+          const errorText = await response.text();
+          console.warn('Error response:', errorText);
+        } catch (e) {
+          console.warn('Could not read error response');
+        }
+        
         return '/placeholder-user.jpg';
       }
 
