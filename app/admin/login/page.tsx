@@ -100,7 +100,7 @@ function AdminLoginForm() {
                   required
                   value={credentials.email}
                   onChange={(e) => setCredentials({ ...credentials, email: e.target.value })}
-                  placeholder="test@gmail.com"
+                  placeholder="admin@gmail.com"
                 />
               </div>
 

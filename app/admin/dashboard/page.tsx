@@ -1239,8 +1239,13 @@ export default function AdminDashboard() {
   }
 
   const handleLogout = () => {
+    // Clear all storage tokens
+    localStorage.removeItem("customerToken")
+    localStorage.removeItem("customerData")
     localStorage.removeItem("adminToken")
-    router.push("/admin/login?unauthorized=true")
+    
+    // Redirect to home page
+    router.push("/")
   }
 
 

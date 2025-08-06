@@ -15,6 +15,7 @@ import { CalendarIcon, Users, Coffee, Star, MapPin } from "lucide-react"
 import { format } from "date-fns"
 import Image from "next/image"
 import Link from "next/link"
+import { useRouter } from "next/navigation"
 import { toast } from "sonner"
 import { userService } from "@/lib/user-service"
 import { bookingService } from "@/lib/booking-service"
@@ -117,6 +118,7 @@ const RoomImageSlider = memo(({ images, roomId }: { images: string[], roomId: nu
 RoomImageSlider.displayName = 'RoomImageSlider'
 
 export default function HomePage() {
+  const router = useRouter()
   const [rooms, setRooms] = useState<Room[]>([])
   const [loading, setLoading] = useState(true)
   const [checkInDate, setCheckInDate] = useState<Date>()
@@ -303,12 +305,18 @@ export default function HomePage() {
   }
 
   const handleLogout = () => {
+    // Clear all storage tokens
     localStorage.removeItem("customerToken")
     localStorage.removeItem("customerData")
+    localStorage.removeItem("adminToken")
+    
+    // Reset state
     setCustomerData(null)
     setProfileImage("")
     setIsLoadingProfileImage(false)
-    window.location.reload()
+    
+    // Redirect to home page
+    router.push("/")
   }
 
   const handlePaymentSuccess = () => {

@@ -348,8 +348,12 @@ export default function CustomerProfile() {
   }
 
   const handleLogout = () => {
+    // Clear all storage tokens
     localStorage.removeItem("customerToken")
     localStorage.removeItem("customerData")
+    localStorage.removeItem("adminToken")
+    
+    // Redirect to home page
     router.push("/")
   }
 
