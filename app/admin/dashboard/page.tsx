@@ -45,7 +45,7 @@ interface Booking {
   notes: string
   numberOfGuest: number
   roomId: string
-  roomNumber?: string
+  roomNumber: string
   roomEntity?: {
     id: string
     roomType: string
@@ -363,6 +363,7 @@ export default function AdminDashboard() {
         return {
           id: room.id,
           roomType: room.roomType,
+          roomNumber: room.roomNumber || '',
           pricePerNight: room.pricePerNight,
           capacity: room.capacity,
           description: room.description || '',
