@@ -6,9 +6,9 @@ import { Toaster } from '@/components/ui/sonner'
 import ErrorBoundary from '@/components/error-boundary'
 
 export const metadata: Metadata = {
-  title: 'v0 App',
-  description: 'Created with v0',
-  generator: 'v0.dev',
+  title: 'El Cae Deara - Booking',
+  description: 'Developed by Bipin Shrestha with Backend Integration',
+  generator: 'El Cae Deara - Booking',
 }
 
 export default function RootLayout({
