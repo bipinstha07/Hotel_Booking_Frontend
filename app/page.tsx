@@ -23,6 +23,7 @@ import PaymentForm from "@/components/payment-form"
 interface Room {
   id: number
   roomType: string
+  roomNumber: string
   pricePerNight: number
   capacity: number
   images: string[]

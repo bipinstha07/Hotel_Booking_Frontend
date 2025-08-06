@@ -19,6 +19,7 @@ import { toast } from "sonner"
 interface Room {
   id: number
   roomType: string
+  roomNumber: string
   pricePerNight: number
   capacity: number
   images: string[]

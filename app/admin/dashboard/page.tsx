@@ -21,6 +21,7 @@ import { Toaster } from "@/components/ui/toaster"
 interface Room {
   id: string | number
   roomType: string
+  roomNumber: string
   pricePerNight: number
   capacity: number
   images: string[]
@@ -155,6 +156,7 @@ export default function AdminDashboard() {
   const [editingRoomNewImages, setEditingRoomNewImages] = useState<File[]>([])
   const [newRoom, setNewRoom] = useState({
     roomType: "",
+    roomNumber: "",
     pricePerNight: "",
     capacity: "",
     description: "",
@@ -440,7 +442,7 @@ export default function AdminDashboard() {
   }, [router, mounted])
 
   const handleCreateRoom = async () => {
-    if (!newRoom.roomType || !newRoom.pricePerNight || !newRoom.capacity || newRoom.images.length === 0) {
+    if (!newRoom.roomType || !newRoom.roomNumber || !newRoom.pricePerNight || !newRoom.capacity || newRoom.images.length === 0) {
       toast({
         title: "Validation Error",
         description: "Please fill all required fields and add at least one image",
@@ -489,6 +491,7 @@ export default function AdminDashboard() {
       // Create room data object
       const roomData = {
         roomType: newRoom.roomType,
+        roomNumber: newRoom.roomNumber,
         pricePerNight: Number.parseInt(newRoom.pricePerNight),
         capacity: Number.parseInt(newRoom.capacity),
         description: newRoom.description || '',
@@ -540,6 +543,7 @@ export default function AdminDashboard() {
         // Reset form
         setNewRoom({
           roomType: "",
+          roomNumber: "",
           pricePerNight: "",
           capacity: "",
           description: "",
@@ -561,6 +565,7 @@ export default function AdminDashboard() {
         await fetchRooms()
         setNewRoom({
           roomType: "",
+          roomNumber: "",
           pricePerNight: "",
           capacity: "",
           description: "",
@@ -611,6 +616,7 @@ export default function AdminDashboard() {
       // Create room data object
       const roomData = {
         roomType: editingRoom.roomType,
+        roomNumber: editingRoom.roomNumber,
         pricePerNight: editingRoom.pricePerNight,
         capacity: editingRoom.capacity,
         description: editingRoom.description || '',
@@ -1374,6 +1380,18 @@ export default function AdminDashboard() {
                           </Select>
                         </div>
                         <div>
+                          <Label htmlFor="roomNumber">Room Number *</Label>
+                          <Input
+                            id="roomNumber"
+                            type="text"
+                            value={newRoom.roomNumber}
+                            onChange={(e) => setNewRoom({ ...newRoom, roomNumber: e.target.value })}
+                            placeholder="e.g., 101, 202, 301"
+                          />
+                        </div>
+                      </div>
+                      <div className="grid grid-cols-2 gap-4">
+                        <div>
                           <Label htmlFor="capacity">Capacity *</Label>
                           <Input
                             id="capacity"
@@ -1385,17 +1403,18 @@ export default function AdminDashboard() {
                             placeholder="Number of guests"
                           />
                         </div>
+                        <div>
+                          <Label htmlFor="pricePerNight">Price Per Night ($) *</Label>
+                          <Input
+                            id="pricePerNight"
+                            type="number"
+                            value={newRoom.pricePerNight}
+                            onChange={(e) => setNewRoom({ ...newRoom, pricePerNight: e.target.value })}
+                            placeholder="Enter price per night"
+                          />
+                        </div>
                       </div>
-                      <div>
-                        <Label htmlFor="pricePerNight">Price Per Night ($) *</Label>
-                        <Input
-                          id="pricePerNight"
-                          type="number"
-                          value={newRoom.pricePerNight}
-                          onChange={(e) => setNewRoom({ ...newRoom, pricePerNight: e.target.value })}
-                          placeholder="Enter price per night"
-                        />
-                      </div>
+
                       <div>
                         <Label htmlFor="description">Description</Label>
                         <Textarea
@@ -1811,6 +1830,18 @@ export default function AdminDashboard() {
                     </Select>
                   </div>
                   <div>
+                    <Label htmlFor="editRoomNumber">Room Number</Label>
+                    <Input
+                      id="editRoomNumber"
+                      type="text"
+                      value={editingRoom.roomNumber}
+                      onChange={(e) => setEditingRoom({ ...editingRoom, roomNumber: e.target.value })}
+                      placeholder="e.g., 101, 202, 301"
+                    />
+                  </div>
+                </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
                     <Label htmlFor="editCapacity">Capacity</Label>
                     <Input
                       id="editCapacity"
@@ -1821,16 +1852,17 @@ export default function AdminDashboard() {
                       onChange={(e) => setEditingRoom({ ...editingRoom, capacity: Number.parseInt(e.target.value) })}
                     />
                   </div>
+                  <div>
+                    <Label htmlFor="editPrice">Price Per Night ($)</Label>
+                    <Input
+                      id="editPrice"
+                      type="number"
+                      value={editingRoom.pricePerNight}
+                      onChange={(e) => setEditingRoom({ ...editingRoom, pricePerNight: Number.parseInt(e.target.value) })}
+                    />
+                  </div>
                 </div>
-                <div>
-                  <Label htmlFor="editPrice">Price Per Night ($)</Label>
-                  <Input
-                    id="editPrice"
-                    type="number"
-                    value={editingRoom.pricePerNight}
-                    onChange={(e) => setEditingRoom({ ...editingRoom, pricePerNight: Number.parseInt(e.target.value) })}
-                  />
-                </div>
+
                 <div>
                   <Label htmlFor="editDescription">Description</Label>
                   <Textarea
