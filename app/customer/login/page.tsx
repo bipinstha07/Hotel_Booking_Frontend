@@ -294,6 +294,26 @@ export default function CustomerAuth() {
   const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
     if (file) {
+      // Validate file type
+      if (!file.type.startsWith('image/')) {
+        toast({
+          title: "Invalid File Type",
+          description: "Please select a valid image file",
+          variant: "destructive",
+        })
+        return
+      }
+      
+      // Validate file size (max 1MB)
+      if (file.size > 1024 * 1024) {
+        toast({
+          title: "File Too Large",
+          description: "Image size should be less than 1MB",
+          variant: "destructive",
+        })
+        return
+      }
+      
       setSignupData({ ...signupData, profileImage: file })
     }
   }

@@ -391,7 +391,24 @@ export default function AdminDashboard() {
   const handleEditImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(e.target.files || [])
     if (files.length > 0) {
-      setEditingRoomNewImages(prev => [...prev, ...files])
+      // Validate file sizes (1MB limit)
+      const validFiles = files.filter(file => {
+        if (file.size > 1024 * 1024) { // 1MB in bytes
+          toast({
+            title: "File Too Large",
+            description: `${file.name} is too large. Maximum file size is 1MB.`,
+            variant: "destructive",
+            duration: 5000,
+            className: "text-sm",
+          })
+          return false
+        }
+        return true
+      })
+
+      if (validFiles.length > 0) {
+        setEditingRoomNewImages(prev => [...prev, ...validFiles])
+      }
     }
   }
 

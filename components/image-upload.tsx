@@ -8,6 +8,7 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Upload, X } from "lucide-react"
 import Image from "next/image"
+import { toast } from "sonner"
 
 interface ImageUploadProps {
   images: File[]
@@ -29,8 +30,21 @@ export function ImageUpload({
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(e.target.files || [])
     if (files.length > 0) {
+      // Validate file sizes (1MB limit)
+      const validFiles = files.filter(file => {
+        if (file.size > 1024 * 1024) { // 1MB in bytes
+          toast.error(`${file.name} is too large. Maximum file size is 1MB.`)
+          return false
+        }
+        return true
+      })
+
+      if (validFiles.length === 0) {
+        return
+      }
+
       const remainingSlots = maxImages - images.length
-      const filesToAdd = files.slice(0, remainingSlots)
+      const filesToAdd = validFiles.slice(0, remainingSlots)
       onImagesChange([...images, ...filesToAdd])
     }
     // Reset input value to allow selecting the same file again
@@ -76,7 +90,7 @@ export function ImageUpload({
           >
             <Upload className="h-8 w-8 text-gray-400" />
             <span className="text-sm text-gray-600">Click to upload images</span>
-            <span className="text-xs text-gray-400">PNG, JPG, JPEG up to 10MB each</span>
+            <span className="text-xs text-gray-400">PNG, JPG, JPEG up to 1MB each</span>
           </Button>
         </div>
       )}
