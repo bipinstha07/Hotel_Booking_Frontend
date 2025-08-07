@@ -20,6 +20,17 @@ import { toast } from "sonner"
 import { userService } from "@/lib/user-service"
 import { bookingService } from "@/lib/booking-service"
 import PaymentForm from "@/components/payment-form"
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog"
 
 interface Room {
   id: number
@@ -508,14 +519,31 @@ export default function HomePage() {
                         Profile
                       </Button>
                     </Link>
-                    <Button 
-                      variant="outline" 
-                      size="sm"
-                      onClick={handleLogout}
-                      className="text-red-600 hover:text-red-700 border-red-200 hover:border-red-300"
-                    >
-                      Logout
-                    </Button>
+                    <AlertDialog>
+                      <AlertDialogTrigger asChild>
+                        <Button 
+                          variant="outline" 
+                          size="sm"
+                          className="text-red-600 hover:text-red-700 border-red-200 hover:border-red-300"
+                        >
+                          Logout
+                        </Button>
+                      </AlertDialogTrigger>
+                      <AlertDialogContent>
+                        <AlertDialogHeader>
+                          <AlertDialogTitle>Confirm Logout</AlertDialogTitle>
+                          <AlertDialogDescription>
+                            Are you sure you want to logout? You will need to login again to access your account.
+                          </AlertDialogDescription>
+                        </AlertDialogHeader>
+                        <AlertDialogFooter>
+                          <AlertDialogCancel>Cancel</AlertDialogCancel>
+                          <AlertDialogAction onClick={handleLogout} className="bg-red-600 hover:bg-red-700">
+                            Logout
+                          </AlertDialogAction>
+                        </AlertDialogFooter>
+                      </AlertDialogContent>
+                    </AlertDialog>
                   </div>
                 </>
               ) : (
