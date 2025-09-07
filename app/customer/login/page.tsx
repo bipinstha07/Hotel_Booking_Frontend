@@ -9,7 +9,7 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { User, Upload } from "lucide-react"
+import { User, Upload, Copy, Check } from "lucide-react"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
 import { useToast } from "@/hooks/use-toast"
@@ -32,6 +32,7 @@ export default function CustomerAuth() {
   const [error, setError] = useState("")
   const [loading, setLoading] = useState(false)
   const [activeTab, setActiveTab] = useState("login")
+  const [copiedField, setCopiedField] = useState<string | null>(null)
   const router = useRouter()
   const { toast } = useToast()
 
@@ -318,6 +319,35 @@ export default function CustomerAuth() {
     }
   }
 
+  const copyToClipboard = async (text: string, type: string) => {
+    try {
+      await navigator.clipboard.writeText(text)
+      
+      // Set the copied field to show check icon
+      setCopiedField(type.toLowerCase())
+      
+      // Reset the copied field after 2 seconds
+      setTimeout(() => {
+        setCopiedField(null)
+      }, 2000)
+      
+      toast({
+        title: "Copied!",
+        description: `${type} copied to clipboard`,
+        variant: "default",
+        duration: 2000,
+        className: "bg-green-500 border-green-200 text-white",
+      })
+    } catch (err) {
+      console.error('Failed to copy: ', err)
+      toast({
+        title: "Copy Failed",
+        description: "Failed to copy to clipboard",
+        variant: "destructive",
+      })
+    }
+  }
+
   return (
     <div className="min-h-screen bg-gray-50 flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8">
       <div className="max-w-md w-full space-y-8">
@@ -495,11 +525,52 @@ export default function CustomerAuth() {
               <Link href="/" className="text-sm text-blue-600 hover:text-blue-500">
                 Back to Home
               </Link>
+              
               <div className="mt-4 p-4 bg-gray-50 rounded-lg">
-              <p className="text-xs text-gray-500">To test the Customer Panel, use the following credentials:</p>
-              <p className="text-xs text-gray-500">Email: customer@gmail.com</p>
-              <p className="text-xs text-gray-500">Password: customer123</p>
-            </div>
+                <p className="text-xs text-gray-500">To test the Customer Panel, use the following credentials:</p>
+              </div>
+              
+              <div className="mt-2 space-y-2">
+                <div className="flex items-center gap-2">
+                  <span className="text-xs text-gray-600">Email:</span>
+                  <div className="flex items-center justify-between bg-white p-2 rounded border flex-1">
+                    <span className="text-xs text-gray-600">customer@gmail.com</span>
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => copyToClipboard("customer@gmail.com", "Email")}
+                      className="h-6 w-6 p-0 hover:bg-gray-100"
+                    >
+                      {copiedField === "email" ? (
+                        <Check className="h-3 w-3 text-green-600" />
+                      ) : (
+                        <Copy className="h-3 w-3" />
+                      )}
+                    </Button>
+                  </div>
+                </div>
+                
+                <div className="flex items-center gap-2">
+                  <span className="text-xs text-gray-600">Password:</span>
+                  <div className="flex items-center justify-between bg-white p-2 rounded border flex-1">
+                    <span className="text-xs text-gray-600">customer123</span>
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => copyToClipboard("customer123", "Password")}
+                      className="h-6 w-6 p-0 hover:bg-gray-100"
+                    >
+                      {copiedField === "password" ? (
+                        <Check className="h-3 w-3 text-green-600" />
+                      ) : (
+                        <Copy className="h-3 w-3" />
+                      )}
+                    </Button>
+                  </div>
+                </div>
+              </div>
             </div>
           </CardContent>
         </Card>

@@ -8,8 +8,10 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Alert, AlertDescription } from "@/components/ui/alert"
+import { Copy, Check } from "lucide-react"
 import Link from "next/link"
 import { useRouter, useSearchParams } from "next/navigation"
+import { useToast } from "@/hooks/use-toast"
 import Image from "next/image"
 
 function AdminLoginForm() {
@@ -19,8 +21,10 @@ function AdminLoginForm() {
   })
   const [error, setError] = useState("")
   const [loading, setLoading] = useState(false)
+  const [copiedField, setCopiedField] = useState<string | null>(null)
   const router = useRouter()
   const searchParams = useSearchParams()
+  const { toast } = useToast()
 
   // Check for unauthorized redirect
   useEffect(() => {
@@ -61,6 +65,35 @@ function AdminLoginForm() {
     }
 
     setLoading(false)
+  }
+
+  const copyToClipboard = async (text: string, type: string) => {
+    try {
+      await navigator.clipboard.writeText(text)
+      
+      // Set the copied field to show check icon
+      setCopiedField(type.toLowerCase())
+      
+      // Reset the copied field after 2 seconds
+      setTimeout(() => {
+        setCopiedField(null)
+      }, 2000)
+      
+      toast({
+        title: "Copied!",
+        description: `${type} copied to clipboard`,
+        variant: "default",
+        duration: 2000,
+        className: "bg-green-500 border-green-200 text-white",
+      })
+    } catch (err) {
+      console.error('Failed to copy: ', err)
+      toast({
+        title: "Copy Failed",
+        description: "Failed to copy to clipboard",
+        variant: "destructive",
+      })
+    }
   }
 
   return (
@@ -129,8 +162,48 @@ function AdminLoginForm() {
 
             <div className="mt-4 p-4 bg-gray-50 rounded-lg">
               <p className="text-xs text-gray-500">To test the Admin Panel, use the following credentials:</p>
-              <p className="text-xs text-gray-500">Email: admin@gmail.com</p>
-              <p className="text-xs text-gray-500">Password: admin123</p>
+            </div>
+            
+            <div className="mt-2 space-y-2">
+              <div className="flex items-center gap-2">
+                <span className="text-xs text-gray-600">Email:</span>
+                <div className="flex items-center justify-between bg-white p-2 rounded border flex-1">
+                  <span className="text-xs text-gray-600">admin@gmail.com</span>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => copyToClipboard("admin@gmail.com", "Email")}
+                    className="h-6 w-6 p-0 hover:bg-gray-100"
+                  >
+                    {copiedField === "email" ? (
+                      <Check className="h-3 w-3 text-green-600" />
+                    ) : (
+                      <Copy className="h-3 w-3" />
+                    )}
+                  </Button>
+                </div>
+              </div>
+              
+              <div className="flex items-center gap-2">
+                <span className="text-xs text-gray-600">Password:</span>
+                <div className="flex items-center justify-between bg-white p-2 rounded border flex-1">
+                  <span className="text-xs text-gray-600">admin123</span>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => copyToClipboard("admin123", "Password")}
+                    className="h-6 w-6 p-0 hover:bg-gray-100"
+                  >
+                    {copiedField === "password" ? (
+                      <Check className="h-3 w-3 text-green-600" />
+                    ) : (
+                      <Copy className="h-3 w-3" />
+                    )}
+                  </Button>
+                </div>
+              </div>
             </div>
           </CardContent>
         </Card>
