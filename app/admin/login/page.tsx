@@ -22,9 +22,11 @@ function AdminLoginForm() {
   const [error, setError] = useState("")
   const [loading, setLoading] = useState(false)
   const [copiedField, setCopiedField] = useState<string | null>(null)
+  const [copyTimeout, setCopyTimeout] = useState<NodeJS.Timeout | null>(null)
+  const [activeToast, setActiveToast] = useState<{ dismiss: () => void } | null>(null)
   const router = useRouter()
   const searchParams = useSearchParams()
-  const { toast } = useToast()
+  const { toast, dismiss } = useToast()
 
   // Check for unauthorized redirect
   useEffect(() => {
@@ -34,10 +36,39 @@ function AdminLoginForm() {
     }
   }, [searchParams])
 
+  // Cleanup timeout and toast on component unmount
+  useEffect(() => {
+    return () => {
+      if (copyTimeout) {
+        clearTimeout(copyTimeout)
+      }
+      if (activeToast) {
+        activeToast.dismiss()
+      }
+      // Dismiss all toasts as a fallback
+      dismiss()
+    }
+  }, [copyTimeout, activeToast, dismiss])
+
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault()
     setLoading(true)
     setError("")
+
+    // Clear any pending copy timeout and reset copied field
+    if (copyTimeout) {
+      clearTimeout(copyTimeout)
+      setCopyTimeout(null)
+    }
+    setCopiedField(null)
+
+    // Dismiss any active toast notifications
+    if (activeToast) {
+      activeToast.dismiss()
+      setActiveToast(null)
+    }
+    // Also dismiss all toasts as a fallback
+    dismiss()
 
     try {
       const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/auth/login`, {
@@ -71,28 +102,38 @@ function AdminLoginForm() {
     try {
       await navigator.clipboard.writeText(text)
       
+      // Clear any existing timeout
+      if (copyTimeout) {
+        clearTimeout(copyTimeout)
+      }
+      
       // Set the copied field to show check icon
       setCopiedField(type.toLowerCase())
       
       // Reset the copied field after 2 seconds
-      setTimeout(() => {
+      const timeout = setTimeout(() => {
         setCopiedField(null)
+        setCopyTimeout(null)
       }, 2000)
+      setCopyTimeout(timeout)
       
-      toast({
+      // Store the toast reference so we can dismiss it later
+      const toastRef = toast({
         title: "Copied!",
         description: `${type} copied to clipboard`,
         variant: "default",
         duration: 2000,
         className: "bg-green-500 border-green-200 text-white",
       })
+      setActiveToast(toastRef)
     } catch (err) {
       console.error('Failed to copy: ', err)
-      toast({
+      const errorToast = toast({
         title: "Copy Failed",
         description: "Failed to copy to clipboard",
         variant: "destructive",
       })
+      setActiveToast(errorToast)
     }
   }
 

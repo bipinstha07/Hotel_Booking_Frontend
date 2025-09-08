@@ -35,6 +35,12 @@ export class UserService {
         try {
           const errorText = await response.text();
           console.warn('Error response:', errorText);
+          
+          // Check if it's an authentication error
+          if (response.status === 401 || (errorText && errorText.includes('Unauthorized'))) {
+            console.log('Authentication error detected, clearing local storage and redirecting to login');
+            this.handleAuthenticationError();
+          }
         } catch (e) {
           console.warn('Could not read error response');
         }
@@ -52,6 +58,19 @@ export class UserService {
     }
   }
 
+  // Handle authentication error by clearing storage and redirecting
+  private handleAuthenticationError() {
+    // Clear all authentication-related localStorage items
+    localStorage.removeItem("customerToken");
+    localStorage.removeItem("customerData");
+    localStorage.removeItem("adminToken");
+    
+    // Redirect to home page
+    if (typeof window !== 'undefined') {
+      window.location.href = '/';
+    }
+  }
+
   // Update user profile
   async updateUserProfile(email: string, userData: Partial<UserData>): Promise<UserData> {
     const response = await fetch(`${this.baseUrl}/update`, {
@@ -63,6 +82,12 @@ export class UserService {
     });
 
     if (!response.ok) {
+      // Check for authentication error
+      if (response.status === 401) {
+        this.handleAuthenticationError();
+        throw new Error('Authentication failed. Please login again.');
+      }
+      
       const error = await response.json();
       throw new Error(error.error || 'Failed to update user profile');
     }
@@ -75,6 +100,12 @@ export class UserService {
     const response = await fetch(`${this.baseUrl}/${encodeURIComponent(email)}`);
     
     if (!response.ok) {
+      // Check for authentication error
+      if (response.status === 401) {
+        this.handleAuthenticationError();
+        throw new Error('Authentication failed. Please login again.');
+      }
+      
       const error = await response.json();
       throw new Error(error.error || 'Failed to fetch user data');
     }
