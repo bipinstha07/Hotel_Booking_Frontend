@@ -1183,44 +1183,52 @@ export default function AdminDashboard() {
     switch (booking.bookingStatus) {
       case "PENDING":
         return (
-          <div className="flex gap-1">
-            <Button
-              size="sm"
-              onClick={() => handleApproveBooking(booking.id!)}
-              className="bg-green-600 hover:bg-green-700 text-xs px-2 py-1 h-6"
-            >
-              Approve
-            </Button>
-            <Button size="sm" variant="outline" onClick={() => handleCancelBooking(booking.id!)} className="text-xs px-2 py-1 h-6">
-              Cancel
-            </Button>
-            <Button size="sm" variant="destructive" onClick={() => handleDeleteBooking(booking.id!, booking.customerName)} className="text-xs px-2 py-1 h-6">
-              Delete
-            </Button>
+          <div className="flex flex-col gap-1">
+            <div className="flex gap-1">
+              <Button
+                size="sm"
+                onClick={() => handleApproveBooking(booking.id!)}
+                className="bg-green-600 hover:bg-green-700 text-xs px-2 py-1 h-6"
+              >
+                Approve
+              </Button>
+              <Button size="sm" variant="outline" onClick={() => handleCancelBooking(booking.id!)} className="text-xs px-2 py-1 h-6">
+                Cancel
+              </Button>
+            </div>
+            <div className="flex justify-center">
+              <Button size="sm" variant="destructive" onClick={() => handleDeleteBooking(booking.id!, booking.customerName)} className="text-xs px-2 py-1 h-6 w-16">
+                Delete
+              </Button>
+            </div>
           </div>
         )
       case "APPROVED":
         return (
-          <div className="flex gap-1">
-            <Button
-              size="sm"
-              onClick={() => handleCompleteBooking(booking.id!)}
-              className="bg-blue-600 hover:bg-blue-700 text-xs px-2 py-1 h-6"
-            >
-              Complete
-            </Button>
-            <Button size="sm" variant="outline" onClick={() => handleCancelBooking(booking.id!)} className="text-xs px-2 py-1 h-6">
-              Cancel
-            </Button>
-            <Button size="sm" variant="destructive" onClick={() => handleDeleteBooking(booking.id!, booking.customerName)} className="text-xs px-2 py-1 h-6">
-              Delete
-            </Button>
+          <div className="flex flex-col gap-1">
+            <div className="flex gap-1">
+              <Button
+                size="sm"
+                onClick={() => handleCompleteBooking(booking.id!)}
+                className="bg-blue-600 hover:bg-blue-700 text-xs px-2 py-1 h-6"
+              >
+                Complete
+              </Button>
+              <Button size="sm" variant="outline" onClick={() => handleCancelBooking(booking.id!)} className="text-xs px-2 py-1 h-6">
+                Cancel
+              </Button>
+            </div>
+            <div className="flex justify-center">
+              <Button size="sm" variant="destructive" onClick={() => handleDeleteBooking(booking.id!, booking.customerName)} className="text-xs px-2 py-1 h-6 w-16">
+                Delete
+              </Button>
+            </div>
           </div>
         )
       case "COMPLETED":
         return (
-          <div className="flex gap-1">
-            <Button size="sm" variant="destructive" onClick={() => handleDeleteBooking(booking.id!, booking.customerName)} className="text-xs px-2 py-1 h-6">
+          <div className="flex justify-center">
+            <Button size="sm" variant="destructive" onClick={() => handleDeleteBooking(booking.id!, booking.customerName)} className="text-xs px-2 py-1 h-6 w-16">
               Delete
             </Button>
           </div>
@@ -1233,7 +1241,7 @@ export default function AdminDashboard() {
         )
       default:
         return (
-          <div className="flex gap-1">
+          <div className="flex flex-col gap-1">
             <Button
               size="sm"
               onClick={() => handleApproveBooking(booking.id!)}
@@ -1241,9 +1249,11 @@ export default function AdminDashboard() {
             >
               Approve
             </Button>
-            <Button size="sm" variant="destructive" onClick={() => handleDeleteBooking(booking.id!, booking.customerName)} className="text-xs px-2 py-1 h-6">
-              Delete
-            </Button>
+            <div className="flex justify-center">
+              <Button size="sm" variant="destructive" onClick={() => handleDeleteBooking(booking.id!, booking.customerName)} className="text-xs px-2 py-1 h-6 w-16">
+                Delete
+              </Button>
+            </div>
           </div>
         )
     }
@@ -1667,167 +1677,131 @@ export default function AdminDashboard() {
               </div>
             </CardHeader>
             <CardContent>
-              <div className="space-y-3">
-                {filteredBookings.length === 0 ? (
-                  <div className="text-center py-8">
-                    <p className="text-gray-500">
-                      {bookings.length === 0 ? "No bookings found" : "No bookings match your search"}
-                    </p>
+              {filteredBookings.length === 0 ? (
+                <div className="text-center py-12 text-gray-500">
+                  <Calendar className="h-12 w-12 mx-auto mb-4 text-gray-300" />
+                  <p className="text-lg font-medium">
+                    {bookings.length === 0 ? "No bookings found" : "No bookings match your search"}
+                  </p>
+                  <p className="text-sm mt-2">Try adjusting your search or filter criteria</p>
+                </div>
+              ) : (
+                <div>
+                  {/* Table Header */}
+                  <div className="bg-gradient-to-r from-slate-50 to-gray-50 border-b border-gray-200 rounded-t-lg p-4 mb-0">
+                    <div className="grid grid-cols-1 lg:grid-cols-12 gap-4">
+                      <div className="lg:col-span-3 border-r border-gray-200 pr-4">
+                        <h3 className="text-xs font-semibold text-gray-600 uppercase tracking-wider">Customer</h3>
+                      </div>
+                      <div className="lg:col-span-2 border-r border-gray-200 pr-4">
+                        <h3 className="text-xs font-semibold text-gray-600 uppercase tracking-wider text-center">Booking Details</h3>
+                      </div>
+                      <div className="lg:col-span-2 border-r border-gray-200 pr-4">
+                        <h3 className="text-xs font-semibold text-gray-600 uppercase tracking-wider text-center">Stay Details</h3>
+                      </div>
+                      <div className="lg:col-span-2 border-r border-gray-200 pr-4">
+                        <h3 className="text-xs font-semibold text-gray-600 uppercase tracking-wider text-center">Payment</h3>
+                      </div>
+                      <div className="lg:col-span-1 border-r border-gray-200 pr-4">
+                        <h3 className="text-xs font-semibold text-gray-600 uppercase tracking-wider text-center">Status</h3>
+                      </div>
+                      <div className="lg:col-span-2">
+                        <h3 className="text-xs font-semibold text-gray-600 uppercase tracking-wider text-center">Actions</h3>
+                      </div>
+                    </div>
                   </div>
-                ) : (
-                  filteredBookings.map((booking) => (
-                    <Card key={booking.id} className={`hover:shadow-xl transition-all duration-300 border-l-4 ${getStatusBorderColor(booking.bookingStatus)}`}>
-                      <CardContent className="p-6">
-                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-                          {/* Column 1: Customer & Booking Info */}
-                          <div className="space-y-3">
-                            <div className="flex items-center gap-3">
-                              <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full flex items-center justify-center">
-                                <span className="text-white font-semibold text-sm">
-                                  {booking.customerName.charAt(0).toUpperCase()}
-                                </span>
-                              </div>
-                              <div className="flex-1">
-                                <h3 className="font-bold text-base text-gray-900">{booking.customerName}</h3>
-                                <p className="text-sm text-gray-600">{booking.customerEmail}</p>
-                              </div>
-                              <Badge className={`text-xs font-medium ${getStatusColor(booking.bookingStatus)}`}>
-                                {booking.bookingStatus}
-                              </Badge>
+                  
+                  {/* Bookings List */}
+                  <div className="space-y-0">
+                    {filteredBookings.map((booking) => (
+                    <div
+                      key={booking.id}
+                      className={`bg-white border rounded-lg p-4 hover:shadow-md transition-all duration-200 ${getStatusBorderColor(booking.bookingStatus)}`}
+                    >
+                      <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 items-center">
+                        {/* Customer Info - 3 columns */}
+                        <div className="lg:col-span-3 border-r border-gray-200 pr-4">
+                          <div className="flex items-center space-x-3">
+                            <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full flex items-center justify-center text-white font-semibold text-sm">
+                              {booking.customerName.charAt(0).toUpperCase()}
                             </div>
-                            <div className="space-y-2">
-                              <div className="flex items-center gap-2 text-sm text-gray-600">
-                                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" />
-                                </svg>
-                                <span>{booking.phoneNumber}</span>
-                              </div>
-                              <div className="text-xs text-gray-500 font-medium">ID: #{booking.id}</div>
-                              
-                            </div>
-                            {booking.roomType && (
-                              <div className="bg-gradient-to-r from-green-50 to-emerald-50 p-3 rounded-lg">
-                                <div className="flex items-center gap-2 mb-2">
-                                  <svg className="w-5 h-5 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
-                                  </svg>
-                                  <span className="font-semibold text-sm text-gray-900">Room Info</span>
-                                </div>
-                                {booking.roomNumber && (
-                                <div className="text-sm text-gray-600">Room: {booking.roomNumber}</div>
-                              )}
-                                <div className="space-y-2">
-                                     <div>
-                                     <span className="text-xs font-medium text-gray-600">Room Type:</span>
-                                     <p className="text-sm font-semibold text-gray-900">{booking.roomType ||booking.roomType}</p>
-                                   </div>
-                                  
-                              
-                                </div>
-                              </div>
-                            )}
-                          </div>
-
-                          {/* Column 2: Dates & Room Info */}
-                          <div className="space-y-3">
-                            <div className="bg-gradient-to-r from-blue-50 to-indigo-50 p-3 rounded-lg">
-                              <div className="flex items-center gap-2 mb-2">
-                                <svg className="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                                </svg>
-                                <span className="font-semibold text-sm text-gray-900">Stay Details</span>
-                              </div>
-                              <div className="space-y-2">
-                                <div>
-                                  <span className="text-xs font-medium text-gray-600">Check-in:</span>
-                                  <p className="text-sm font-semibold text-gray-900">{new Date(booking.checkInDate).toLocaleDateString()}</p>
-                                </div>
-                                <div>
-                                  <span className="text-xs font-medium text-gray-600">Check-out:</span>
-                                  <p className="text-sm font-semibold text-gray-900">{new Date(booking.checkOutDate).toLocaleDateString()}</p>
-                                </div>
-                                <div>
-                                  <span className="text-xs font-medium text-gray-600">Guests:</span>
-                                  <p className="text-sm font-semibold text-gray-900">{booking.numberOfGuest}</p>
-                                </div>
-                              </div>
-                            </div>
-                           
-                              
-                        
-                          </div>
-
-                          {/* Column 3: Payment & Total */}
-                          <div className="space-y-3">
-                            <div className="bg-gradient-to-r from-green-50 to-emerald-50 p-3 rounded-lg">
-                              <div className="flex items-center gap-2 mb-2">
-                                <svg className="w-5 h-5 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                                </svg>
-                                <span className="font-semibold text-sm text-gray-900">Payment</span>
-                              </div>
-                              <div className="space-y-2">
-                                <div className="text-center">
-                                  <span className="text-xs font-medium text-gray-600">Total Amount</span>
-                                  <p className="text-xl font-bold text-green-600">${booking.totalPrice}</p>
-                                </div>
-                                {booking.paymentStatus && (
-                                  <div className="text-center">
-                                    <span className="text-xs font-medium text-gray-600">Status</span>
-                                    <div className="flex justify-center mt-1">
-                                      <Badge className={`text-xs font-medium ${getPaymentStatusColor(booking.paymentStatus)}`}>
-                                        {booking.paymentStatus}
-                                      </Badge>
-                                    </div>
-                                  </div>
-                                )}
-                              </div>
-                            </div>
-                            {booking.paymentIntentId && (
-                              <div className="bg-gray-50 p-3 rounded-lg">
-                                <div className="flex items-center gap-2 mb-2">
-                                  <svg className="w-4 h-4 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V8a2 2 0 00-2-2h-5m-4 0V4a2 2 0 114 0v2m-4 0a2 2 0 104 0m-5 8a2 2 0 100-4 2 2 0 000 4zm0 0c1.306 0 2.417.835 2.83 2M9 14a3.001 3.001 0 00-2.83 2M15 11h3m-3 4h2" />
-                                  </svg>
-                                  <span className="text-xs font-medium text-gray-700">Payment ID</span>
-                                </div>
-                                <p className="text-xs text-gray-600 font-mono break-all">{booking.paymentIntentId}</p>
-                              </div>
-                            )}
-                          </div>
-
-                          {/* Column 4: Notes & Actions */}
-                          <div className="space-y-3">
-                            {booking.notes && (
-                              <div className="bg-gradient-to-r from-purple-50 to-pink-50 p-3 rounded-lg">
-                                <div className="flex items-center gap-2 mb-2">
-                                  <svg className="w-5 h-5 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
-                                  </svg>
-                                  <span className="font-semibold text-sm text-gray-900">Notes</span>
-                                </div>
-                                <p className="text-sm text-gray-700 bg-white/50 p-2 rounded border">{booking.notes}</p>
-                              </div>
-                            )}
-                            <div className="bg-gradient-to-r from-orange-50 to-red-50 p-3 rounded-lg">
-                              <div className="flex items-center gap-2 mb-2">
-                                <svg className="w-5 h-5 text-orange-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
-                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                                </svg>
-                                <span className="font-semibold text-sm text-gray-900">Actions</span>
-                              </div>
-                              <div className="flex justify-center">
-                                {getStatusActions(booking)}
-                              </div>
+                            <div className="min-w-0 flex-1">
+                              <p className="font-semibold text-gray-900 truncate">{booking.customerName}</p>
+                              <p className="text-sm text-gray-500 truncate">{booking.customerEmail}</p>
+                              <p className="text-xs text-gray-400">{booking.phoneNumber}</p>
                             </div>
                           </div>
                         </div>
-                      </CardContent>
-                    </Card>
-                  ))
-                )}
-              </div>
+
+                        {/* Booking Details - 2 columns */}
+                        <div className="lg:col-span-2 border-r border-gray-200 pr-4">
+                          <div className="text-center">
+                            <p className="text-xs font-mono text-gray-500">#{booking.id}</p>
+                            <p className="font-semibold text-lg">{booking.roomNumber || booking.roomId}</p>
+                            <p className="text-sm text-gray-600">{booking.roomType || 'N/A'}</p>
+                          </div>
+                        </div>
+
+                        {/* Stay Details - 2 columns (reduced from 3) */}
+                        <div className="lg:col-span-2 border-r border-gray-200 pr-4">
+                          <div className="text-center space-y-1">
+                            <div className="flex items-center justify-center space-x-2">
+                              <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+                              <span className="text-sm font-medium">
+                                {new Date(booking.checkInDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+                              </span>
+                            </div>
+                            <div className="flex items-center justify-center space-x-2">
+                              <div className="w-2 h-2 bg-red-500 rounded-full"></div>
+                              <span className="text-sm font-medium">
+                                {new Date(booking.checkOutDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+                              </span>
+                            </div>
+                            <p className="text-xs text-gray-500">{booking.numberOfGuest} guest{booking.numberOfGuest !== 1 ? 's' : ''}</p>
+                            {booking.notes && (
+                              <div className="bg-gray-50 p-1 rounded border text-xs text-center">
+                                {booking.notes}
+                              </div>
+                            )}
+                          </div>
+                        </div>
+
+                        {/* Payment Info - 1 column (reduced from 2) */}
+                        <div className="lg:col-span-2 border-r border-gray-200 pr-4">
+                          <div className="text-center">
+                            <p className="text-lg font-bold text-green-600  transition-colors duration-200">${booking.totalPrice}</p>
+                            <Badge className={`text-xs ${getPaymentStatusColor(booking.paymentStatus || 'pending')} hover:text-[${getPaymentStatusColor(booking.paymentStatus || 'pending')}] hover:bg-white  transition-colors duration-200`}>
+                              {booking.paymentStatus || 'Pending'}
+                            </Badge>
+                            {booking.paymentIntentId && (
+                              <p className="text-xs font-mono text-gray-400 mt-1 break-all  transition-colors duration-200" title={booking.paymentIntentId}>
+                                {booking.paymentIntentId}
+                              </p>
+                            )}
+                          </div>
+                        </div>
+
+                        {/* Status - 2 columns */}
+                        <div className="lg:col-span-1  ">
+                          <div className="text-center">
+                            <Badge className={`text-xs hover:bg-white hover:text-[${getStatusColor(booking.bookingStatus)}] ${getStatusColor(booking.bookingStatus)}  transition-colors duration-200`}>
+                              {booking.bookingStatus || 'Unknown'}
+                            </Badge>
+                          </div>
+                        </div>
+
+                        {/* Actions - 2 columns (increased from 1) */}
+                        <div className="lg:col-span-2">
+                          <div className="flex justify-center">
+                            {getStatusActions(booking)}
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                    ))}
+                  </div>
+                </div>
+              )}
             </CardContent>
           </Card>
         )}
