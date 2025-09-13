@@ -14,7 +14,7 @@ export default function BookingForm() {
   return (
     <Card className="w-full max-w-md mx-auto">
       <CardHeader>
-        <CardTitle>Book Your Stay</CardTitle>
+        <CardTitle>Book Your Stay </CardTitle>
         <CardDescription>
           Create a new booking with secure payment processing
         </CardDescription>
